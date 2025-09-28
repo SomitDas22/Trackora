@@ -209,9 +209,43 @@ const Dashboard = ({ user, onLogout }) => {
     return () => clearInterval(timer);
   }, []);
 
+  // Fetch session history
+  const fetchSessionHistory = async () => {
+    try {
+      const response = await axios.get(`${API}/sessions/history`);
+      setSessionHistory(response.data);
+    } catch (err) {
+      console.error('Error fetching session history:', err);
+    }
+  };
+
+  // Fetch calendar data
+  const fetchCalendarData = async (year = new Date().getFullYear(), month = new Date().getMonth() + 1) => {
+    try {
+      const response = await axios.get(`${API}/calendar/month?year=${year}&month=${month}`);
+      setCalendarData(response.data);
+    } catch (err) {
+      console.error('Error fetching calendar data:', err);
+    }
+  };
+
+  // Fetch dashboard stats
+  const fetchDashboardStats = async () => {
+    try {
+      const response = await axios.get(`${API}/dashboard/stats?year=${new Date().getFullYear()}`);
+      setDashboardStats(response.data);
+    } catch (err) {
+      console.error('Error fetching dashboard stats:', err);
+    }
+  };
+
   // Fetch session on mount and periodically
   useEffect(() => {
     fetchActiveSession();
+    fetchSessionHistory();
+    fetchCalendarData();
+    fetchDashboardStats();
+    
     const interval = setInterval(fetchActiveSession, 5000); // Refresh every 5 seconds
     return () => clearInterval(interval);
   }, []);
