@@ -153,6 +153,27 @@ class ProjectCreate(BaseModel):
     end_date: str = ""
     status: str = "Active"  # Active, Completed, On Hold
 
+class OrganizationSettings(BaseModel):
+    company_name: str
+    company_logo: str = ""  # Base64 encoded or file path
+    establishment_date: str = ""
+    company_email: str = ""
+    founder_name: str = ""
+    founder_email: str = ""
+    address: str = ""
+    phone: str = ""
+    website: str = ""
+
+class OrganizationUpdate(BaseModel):
+    company_name: str
+    establishment_date: str = ""
+    company_email: str = ""
+    founder_name: str = ""
+    founder_email: str = ""
+    address: str = ""
+    phone: str = ""
+    website: str = ""
+
 # Utility functions
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
