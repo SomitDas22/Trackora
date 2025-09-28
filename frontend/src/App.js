@@ -309,10 +309,19 @@ const AdminLoginPage = ({ onAdminLogin, orgBranding }) => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-blue-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-md border-slate-700">
         <CardHeader className="text-center">
+          {orgBranding.company_logo && (
+            <div className="flex justify-center mb-4">
+              <img 
+                src={orgBranding.company_logo} 
+                alt={orgBranding.company_name} 
+                className="h-16 w-16 object-contain"
+              />
+            </div>
+          )}
           <CardTitle className="text-2xl font-bold text-gray-800">
             Admin Login
           </CardTitle>
-          <p className="text-gray-600">Work Hours Tracker - Admin Panel</p>
+          <p className="text-gray-600">{orgBranding.company_name} - Admin Panel</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
