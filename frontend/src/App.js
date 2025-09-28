@@ -1344,6 +1344,149 @@ const AdminDashboard = ({ admin, onLogout }) => {
         </div>
       )}
 
+      {/* Employee Management Page */}
+      {showEmployeePage && (
+        <div className="fixed inset-0 bg-slate-800 z-50 overflow-y-auto">
+          <div className="max-w-7xl mx-auto p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Employee Management</h2>
+                <p className="text-slate-300">Manage all employee information and details</p>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => setShowCreateEmployeeModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  data-testid="add-employee-page-btn"
+                >
+                  Add New Employee
+                </Button>
+                <Button
+                  onClick={() => setShowEmployeePage(false)}
+                  variant="outline"
+                  className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  data-testid="close-employee-page"
+                >
+                  ← Back to Dashboard
+                </Button>
+              </div>
+            </div>
+
+            {/* Employee Table */}
+            <Card className="bg-slate-700 border-slate-600">
+              <CardHeader>
+                <CardTitle className="text-white">
+                  All Employees ({employees.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {employees.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-600">
+                          <TableHead className="text-slate-300">Name</TableHead>
+                          <TableHead className="text-slate-300">DOB</TableHead>
+                          <TableHead className="text-slate-300">Phone No</TableHead>
+                          <TableHead className="text-slate-300">Blood Group</TableHead>
+                          <TableHead className="text-slate-300">Email</TableHead>
+                          <TableHead className="text-slate-300">Emergency Contact</TableHead>
+                          <TableHead className="text-slate-300">Address</TableHead>
+                          <TableHead className="text-slate-300">Aadhar Card</TableHead>
+                          <TableHead className="text-slate-300">Designation</TableHead>
+                          <TableHead className="text-slate-300">Department</TableHead>
+                          <TableHead className="text-slate-300">Joining Date</TableHead>
+                          <TableHead className="text-slate-300">Release Date</TableHead>
+                          <TableHead className="text-slate-300">Status</TableHead>
+                          <TableHead className="text-slate-300">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {employees.map((employee) => (
+                          <TableRow key={employee.id} className="border-slate-600 hover:bg-slate-600">
+                            <TableCell className="font-medium text-white">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                  {employee.name.charAt(0).toUpperCase()}
+                                </div>
+                                <span>{employee.name}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-slate-300">
+                              {employee.dob ? new Date(employee.dob).toLocaleDateString('en-IN') : 'N/A'}
+                            </TableCell>
+                            <TableCell className="text-slate-300">{employee.phone || 'N/A'}</TableCell>
+                            <TableCell className="text-slate-300">{employee.blood_group || 'N/A'}</TableCell>
+                            <TableCell className="text-slate-300">{employee.email}</TableCell>
+                            <TableCell className="text-slate-300">{employee.emergency_contact || 'N/A'}</TableCell>
+                            <TableCell className="text-slate-300 max-w-32 truncate">{employee.address || 'N/A'}</TableCell>
+                            <TableCell className="text-slate-300">{employee.aadhar_card || 'N/A'}</TableCell>
+                            <TableCell className="text-slate-300">{employee.designation || 'N/A'}</TableCell>
+                            <TableCell className="text-slate-300">{employee.department || 'N/A'}</TableCell>
+                            <TableCell className="text-slate-300">
+                              {employee.joining_date ? new Date(employee.joining_date).toLocaleDateString('en-IN') : 'N/A'}
+                            </TableCell>
+                            <TableCell className="text-slate-300">
+                              {employee.release_date ? new Date(employee.release_date).toLocaleDateString('en-IN') : 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                className={
+                                  employee.status === 'Active' 
+                                    ? 'bg-green-600 text-green-100' 
+                                    : 'bg-red-600 text-red-100'
+                                }
+                              >
+                                {employee.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button
+                                  onClick={() => openEditEmployee(employee)}
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+                                  data-testid={`edit-employee-${employee.id}`}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  onClick={() => deleteEmployee(employee.id)}
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                                  data-testid={`delete-employee-${employee.id}`}
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <UserCheck className="h-16 w-16 mx-auto mb-4 opacity-50 text-slate-400" />
+                    <h3 className="text-lg font-medium text-slate-300 mb-2">No Employees</h3>
+                    <p className="text-slate-400">Add your first employee to get started</p>
+                    <Button
+                      onClick={() => setShowCreateEmployeeModal(true)}
+                      className="mt-4 bg-blue-600 hover:bg-blue-700"
+                    >
+                      Add First Employee
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
       {/* Create Admin Modal */}
       <Dialog open={showCreateAdminModal} onOpenChange={setShowCreateAdminModal}>
         <DialogContent className="max-w-md">
