@@ -1693,6 +1693,305 @@ const AdminDashboard = ({ admin, onLogout }) => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Create Employee Modal */}
+      <Dialog open={showCreateEmployeeModal} onOpenChange={setShowCreateEmployeeModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Employee</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-700">Basic Information</h3>
+              <div>
+                <Label htmlFor="emp-name">Full Name *</Label>
+                <Input
+                  id="emp-name"
+                  value={newEmployeeData.name}
+                  onChange={(e) => setNewEmployeeData({...newEmployeeData, name: e.target.value})}
+                  placeholder="Enter full name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="emp-email">Email *</Label>
+                <Input
+                  id="emp-email"
+                  type="email"
+                  value={newEmployeeData.email}
+                  onChange={(e) => setNewEmployeeData({...newEmployeeData, email: e.target.value})}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="emp-phone">Phone Number *</Label>
+                <Input
+                  id="emp-phone"
+                  value={newEmployeeData.phone}
+                  onChange={(e) => setNewEmployeeData({...newEmployeeData, phone: e.target.value})}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="emp-password">Password *</Label>
+                <Input
+                  id="emp-password"
+                  type="password"
+                  value={newEmployeeData.password}
+                  onChange={(e) => setNewEmployeeData({...newEmployeeData, password: e.target.value})}
+                  placeholder="Enter password"
+                />
+              </div>
+              <div>
+                <Label htmlFor="emp-dob">Date of Birth</Label>
+                <Input
+                  id="emp-dob"
+                  type="date"
+                  value={newEmployeeData.dob}
+                  onChange={(e) => setNewEmployeeData({...newEmployeeData, dob: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="emp-blood-group">Blood Group</Label>
+                <Input
+                  id="emp-blood-group"
+                  value={newEmployeeData.blood_group}
+                  onChange={(e) => setNewEmployeeData({...newEmployeeData, blood_group: e.target.value})}
+                  placeholder="e.g., A+, B-, O+"
+                />
+              </div>
+              <div>
+                <Label htmlFor="emp-emergency">Emergency Contact</Label>
+                <Input
+                  id="emp-emergency"
+                  value={newEmployeeData.emergency_contact}
+                  onChange={(e) => setNewEmployeeData({...newEmployeeData, emergency_contact: e.target.value})}
+                  placeholder="Emergency contact number"
+                />
+              </div>
+            </div>
+
+            {/* Work Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-700">Work Information</h3>
+              <div>
+                <Label htmlFor="emp-address">Address</Label>
+                <Textarea
+                  id="emp-address"
+                  value={newEmployeeData.address}
+                  onChange={(e) => setNewEmployeeData({...newEmployeeData, address: e.target.value})}
+                  placeholder="Enter full address"
+                  rows={2}
+                />
+              </div>
+              <div>
+                <Label htmlFor="emp-aadhar">Aadhar Card Number</Label>
+                <Input
+                  id="emp-aadhar"
+                  value={newEmployeeData.aadhar_card}
+                  onChange={(e) => setNewEmployeeData({...newEmployeeData, aadhar_card: e.target.value})}
+                  placeholder="Enter 12-digit Aadhar number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="emp-designation">Designation</Label>
+                <Input
+                  id="emp-designation"
+                  value={newEmployeeData.designation}
+                  onChange={(e) => setNewEmployeeData({...newEmployeeData, designation: e.target.value})}
+                  placeholder="e.g., Software Developer"
+                />
+              </div>
+              <div>
+                <Label htmlFor="emp-department">Department</Label>
+                <Input
+                  id="emp-department"
+                  value={newEmployeeData.department}
+                  onChange={(e) => setNewEmployeeData({...newEmployeeData, department: e.target.value})}
+                  placeholder="e.g., IT, HR, Finance"
+                />
+              </div>
+              <div>
+                <Label htmlFor="emp-joining">Joining Date</Label>
+                <Input
+                  id="emp-joining"
+                  type="date"
+                  value={newEmployeeData.joining_date}
+                  onChange={(e) => setNewEmployeeData({...newEmployeeData, joining_date: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="emp-release">Release Date (Optional)</Label>
+                <Input
+                  id="emp-release"
+                  type="date"
+                  value={newEmployeeData.release_date}
+                  onChange={(e) => setNewEmployeeData({...newEmployeeData, release_date: e.target.value})}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex space-x-2 mt-6">
+            <Button onClick={createNewEmployee} className="flex-1" data-testid="create-employee-submit">
+              Create Employee
+            </Button>
+            <Button 
+              onClick={() => setShowCreateEmployeeModal(false)} 
+              variant="outline" 
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Employee Modal */}
+      <Dialog open={showEditEmployeeModal} onOpenChange={setShowEditEmployeeModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Employee</DialogTitle>
+          </DialogHeader>
+          {editingEmployee && (
+            <div className="grid grid-cols-2 gap-4">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-700">Basic Information</h3>
+                <div>
+                  <Label htmlFor="edit-emp-name">Full Name *</Label>
+                  <Input
+                    id="edit-emp-name"
+                    value={editingEmployee.name}
+                    onChange={(e) => setEditingEmployee({...editingEmployee, name: e.target.value})}
+                    placeholder="Enter full name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-emp-email">Email *</Label>
+                  <Input
+                    id="edit-emp-email"
+                    type="email"
+                    value={editingEmployee.email}
+                    onChange={(e) => setEditingEmployee({...editingEmployee, email: e.target.value})}
+                    placeholder="Enter email address"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-emp-phone">Phone Number *</Label>
+                  <Input
+                    id="edit-emp-phone"
+                    value={editingEmployee.phone}
+                    onChange={(e) => setEditingEmployee({...editingEmployee, phone: e.target.value})}
+                    placeholder="Enter phone number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-emp-dob">Date of Birth</Label>
+                  <Input
+                    id="edit-emp-dob"
+                    type="date"
+                    value={editingEmployee.dob}
+                    onChange={(e) => setEditingEmployee({...editingEmployee, dob: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-emp-blood-group">Blood Group</Label>
+                  <Input
+                    id="edit-emp-blood-group"
+                    value={editingEmployee.blood_group}
+                    onChange={(e) => setEditingEmployee({...editingEmployee, blood_group: e.target.value})}
+                    placeholder="e.g., A+, B-, O+"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-emp-emergency">Emergency Contact</Label>
+                  <Input
+                    id="edit-emp-emergency"
+                    value={editingEmployee.emergency_contact}
+                    onChange={(e) => setEditingEmployee({...editingEmployee, emergency_contact: e.target.value})}
+                    placeholder="Emergency contact number"
+                  />
+                </div>
+              </div>
+
+              {/* Work Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-700">Work Information</h3>
+                <div>
+                  <Label htmlFor="edit-emp-address">Address</Label>
+                  <Textarea
+                    id="edit-emp-address"
+                    value={editingEmployee.address}
+                    onChange={(e) => setEditingEmployee({...editingEmployee, address: e.target.value})}
+                    placeholder="Enter full address"
+                    rows={2}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-emp-aadhar">Aadhar Card Number</Label>
+                  <Input
+                    id="edit-emp-aadhar"
+                    value={editingEmployee.aadhar_card}
+                    onChange={(e) => setEditingEmployee({...editingEmployee, aadhar_card: e.target.value})}
+                    placeholder="Enter 12-digit Aadhar number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-emp-designation">Designation</Label>
+                  <Input
+                    id="edit-emp-designation"
+                    value={editingEmployee.designation}
+                    onChange={(e) => setEditingEmployee({...editingEmployee, designation: e.target.value})}
+                    placeholder="e.g., Software Developer"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-emp-department">Department</Label>
+                  <Input
+                    id="edit-emp-department"
+                    value={editingEmployee.department}
+                    onChange={(e) => setEditingEmployee({...editingEmployee, department: e.target.value})}
+                    placeholder="e.g., IT, HR, Finance"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-emp-joining">Joining Date</Label>
+                  <Input
+                    id="edit-emp-joining"
+                    type="date"
+                    value={editingEmployee.joining_date}
+                    onChange={(e) => setEditingEmployee({...editingEmployee, joining_date: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-emp-release">Release Date (Optional)</Label>
+                  <Input
+                    id="edit-emp-release"
+                    type="date"
+                    value={editingEmployee.release_date}
+                    onChange={(e) => setEditingEmployee({...editingEmployee, release_date: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="flex space-x-2 mt-6">
+            <Button onClick={updateEmployee} className="flex-1" data-testid="update-employee-submit">
+              Update Employee
+            </Button>
+            <Button 
+              onClick={() => {
+                setShowEditEmployeeModal(false);
+                setEditingEmployee(null);
+              }} 
+              variant="outline" 
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
