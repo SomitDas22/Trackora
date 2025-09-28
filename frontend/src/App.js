@@ -319,6 +319,21 @@ const AdminDashboard = ({ admin, onLogout }) => {
     dob: '', blood_group: '', emergency_contact: '', address: '',
     aadhar_card: '', designation: '', department: '', joining_date: '', release_date: ''
   });
+  const [showManagerAssignmentPage, setShowManagerAssignmentPage] = useState(false);
+  const [organizationTree, setOrganizationTree] = useState(null);
+  const [departments, setDepartments] = useState([]);
+  const [managers, setManagers] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [showCreateDepartmentModal, setShowCreateDepartmentModal] = useState(false);
+  const [showCreateManagerModal, setShowCreateManagerModal] = useState(false);
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [newDepartmentData, setNewDepartmentData] = useState({ name: '', description: '' });
+  const [newManagerData, setNewManagerData] = useState({ employee_id: '', department_id: '' });
+  const [newProjectData, setNewProjectData] = useState({
+    name: '', description: '', department_id: '', manager_id: '', employee_ids: [],
+    start_date: '', end_date: '', status: 'Active'
+  });
+  const [selectedEmployeesForProject, setSelectedEmployeesForProject] = useState([]);
 
   // Fetch all users
   const fetchUsers = async () => {
