@@ -1158,6 +1158,40 @@ const AdminDashboard = ({ admin, onLogout, orgBranding }) => {
                   </Card>
                 </div>
 
+                {/* Additional Admin Cards - Second Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Employee Leave Requests Card */}
+                  <EmployeeLeaveRequestsCard />
+
+                  {/* Organization Settings Card */}
+                  <Card 
+                    className="hover:shadow-lg transition-shadow cursor-pointer hover:bg-gray-50"
+                    onClick={() => setShowOrgSettingsPage(true)}
+                    data-testid="org-settings-card"
+                  >
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold">Organization Settings</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl font-bold text-slate-700">⚙️</span>
+                          <Clock className="h-6 w-6 text-slate-500" />
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {organizationSettings ? organizationSettings.company_name : 'Configure company details'}
+                        </div>
+                        <div className="text-xs text-blue-600 font-medium pt-1">
+                          Click to configure →
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Leave Settings Card */}
+                  <LeaveSettingsCard />
+                </div>
+
                 {/* Recent Sessions */}
                 <Card>
                   <CardHeader>
