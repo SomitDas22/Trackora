@@ -906,13 +906,93 @@ const AdminDashboard = ({ admin, onLogout, orgBranding }) => {
       alert('Company name is required');
       return;
     }
-
+    
     try {
       await axios.put(`${API}/admin/organization-settings`, orgSettingsData);
-      await fetchOrganizationSettings();
       alert('Organization settings updated successfully!');
+      fetchOrganizationSettings(); // Refresh the data
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to update organization settings');
+    }
+  };
+
+  // Handle logo file selection
+  const handleLogoUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please select a PNG or JPEG image file');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      alert('File size too large. Please select an image under 5MB');
+      return;
+    }
+
+    setLogoUploading(true);
+
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const logoBase64 = e.target.result;
+          setLogoPreview(logoBase64);
+
+          // Upload to backend
+          const response = await axios.post(`${API}/admin/upload-logo-base64`, {
+            logo_base64: logoBase64
+          });
+
+          alert('Logo uploaded successfully!');
+          
+          // Refresh organization settings to get the new logo
+          await fetchOrganizationSettings();
+          
+        } catch (err) {
+          alert(err.response?.data?.detail || 'Failed to upload logo');
+          setLogoPreview(null);
+        } finally {
+          setLogoUploading(false);
+        }
+      };
+      
+      reader.onerror = () => {
+        alert('Error reading file');
+        setLogoUploading(false);
+      };
+      
+      reader.readAsDataURL(file);
+    } catch (err) {
+      alert('Error processing file');
+      setLogoUploading(false);
+    }
+  };
+
+  // Remove logo
+  const removeLogo = async () => {
+    if (!window.confirm('Are you sure you want to remove the current logo?')) {
+      return;
+    }
+
+    setLogoUploading(true);
+    try {
+      await axios.delete(`${API}/admin/remove-logo`);
+      alert('Logo removed successfully!');
+      setLogoPreview(null);
+      
+      // Refresh organization settings
+      await fetchOrganizationSettings();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to remove logo');
+    } finally {
+      setLogoUploading(false);
     }
   };
 
