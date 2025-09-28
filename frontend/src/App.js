@@ -301,7 +301,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
   const [showCreateAdminModal, setShowCreateAdminModal] = useState(false);
   const [showHolidayModal, setShowHolidayModal] = useState(false);
   const [newAdminData, setNewAdminData] = useState({ name: '', email: '', password: '' });
-  const [newHolidayData, setNewHolidayData] = useState({ date: '', name: '' });
+  const [newHolidayData, setNewHolidayData] = useState({ date: '', name: '', type: 'Mandatory' });
   const [usersOnLeave, setUsersOnLeave] = useState(null);
   const [showAdminUsersPage, setShowAdminUsersPage] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState(null);
