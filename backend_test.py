@@ -820,6 +820,11 @@ class BackendTester:
         
         self.test_authentication_scenarios()
         
+        # Manager Status and Notification tests
+        self.test_manager_status_api()
+        self.test_notification_apis()
+        self.test_leave_approval_notification_workflow()
+        
         # Print summary
         self.print_summary()
     
