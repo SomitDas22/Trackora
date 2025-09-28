@@ -487,6 +487,46 @@ const AdminDashboard = ({ admin, onLogout }) => {
     setShowEditAdminModal(true);
   };
 
+  // Update holiday
+  const updateHoliday = async () => {
+    if (!editingHoliday.name || !editingHoliday.date || !editingHoliday.type) {
+      alert('Please fill all fields');
+      return;
+    }
+
+    try {
+      await axios.put(`${API}/admin/update-holiday/${editingHoliday.id}`, {
+        name: editingHoliday.name,
+        date: editingHoliday.date,
+        type: editingHoliday.type
+      });
+      setShowEditHolidayModal(false);
+      setEditingHoliday(null);
+      await fetchHolidaysData();
+      alert('Holiday updated successfully!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to update holiday');
+    }
+  };
+
+  // Delete holiday (updated for single holiday)
+  const deleteHolidayById = async (holidayId) => {
+    if (!confirm('Are you sure you want to delete this holiday?')) return;
+
+    try {
+      await axios.delete(`${API}/admin/holiday/${holidayId}`);
+      await fetchHolidaysData();
+      alert('Holiday deleted successfully!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to delete holiday');
+    }
+  };
+
+  const openEditHoliday = (holiday) => {
+    setEditingHoliday({ ...holiday });
+    setShowEditHolidayModal(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Admin Header */}
