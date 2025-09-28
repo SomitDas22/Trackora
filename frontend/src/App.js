@@ -1318,6 +1318,21 @@ const AdminDashboard = ({ admin, onLogout }) => {
                 onChange={(e) => setNewHolidayData({...newHolidayData, date: e.target.value})}
               />
             </div>
+            <div>
+              <Label htmlFor="holiday-type">Type</Label>
+              <Select 
+                value={newHolidayData.type} 
+                onValueChange={(value) => setNewHolidayData({...newHolidayData, type: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Mandatory">Mandatory</SelectItem>
+                  <SelectItem value="Optional">Optional</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex space-x-2">
               <Button onClick={addNewHoliday} className="flex-1" data-testid="add-holiday-submit">
                 Add Holiday
