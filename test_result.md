@@ -307,6 +307,18 @@ frontend:
           agent: "main"
           comment: "Added logo upload functionality to Organization Settings page with file picker, preview, validation (PNG/JPEG, 5MB max), upload/remove buttons, and integration with backend API"
 
+  - task: "Manager Dashboard & Notifications UI"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Added ManagerLeaveRequestsSection to Employee Dashboard for managers to approve/reject leaves with table view and approval dialog. Added NotificationsSection for leave request updates. Integrated with manager status check and notification APIs."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
