@@ -767,7 +767,11 @@ const AdminDashboard = ({ admin, onLogout }) => {
                   </Card>
 
                   {/* Employees Card */}
-                  <Card className="hover:shadow-lg transition-shadow">
+                  <Card 
+                    className="hover:shadow-lg transition-shadow cursor-pointer hover:bg-gray-50"
+                    onClick={() => setShowEmployeePage(true)}
+                    data-testid="employees-card"
+                  >
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg font-semibold">Employees</CardTitle>
                     </CardHeader>
@@ -786,6 +790,9 @@ const AdminDashboard = ({ admin, onLogout }) => {
                             <div className="font-medium text-gray-700">{users.filter(u => u.total_sessions === 0).length}</div>
                             <div className="text-gray-600">New</div>
                           </div>
+                        </div>
+                        <div className="text-xs text-blue-600 font-medium pt-1">
+                          Click to manage →
                         </div>
                       </div>
                     </CardContent>
