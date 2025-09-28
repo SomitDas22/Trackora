@@ -1867,27 +1867,32 @@ async def apply_leave(leave_data: LeaveApplicationCreate, current_user: User = D
                 detail=f"Insufficient {leave_data.leave_type} balance. Available: {balance[leave_type_key]['available']}"
             )
         
-        # Find employee's manager through manager-employee relationship or user department
+        # Find employee's manager through department assignment
         manager_id = None
         
-        # First, try to find if this user is directly assigned to any manager via manager assignments
-        manager_assignment = await db.managers.find({"employee_id": {"$exists": True}}).to_list(length=None)
+        # Find employee's department assignment
+        employee_dept_assignment = await db.employee_departments.find_one({"employee_id": current_user.id})
         
-        # Look for department where current user might be working under a manager
-        # Check if user has a department assignment in user profile or through manager relationships
-        user_department = None
+        if employee_dept_assignment:
+            department_id = employee_dept_assignment["department_id"]
+            
+            # Find manager assigned to this department
+            manager_assignment = await db.managers.find_one({"department_id": department_id})
+            
+            if manager_assignment:
+                manager_id = manager_assignment["employee_id"]
         
-        # Try to find user's department through existing manager-project relationships
-        projects = await db.projects.find({"employee_ids": current_user.id}).to_list(length=None)
-        if projects:
-            # Get manager from first project (employees usually belong to one department)
-            project = projects[0]
-            manager_id = project.get("manager_id")
-        else:
-            # Fallback: assign to first available manager if none found
-            managers = await db.managers.find({}).to_list(length=None)
-            if managers:
-                manager_id = managers[0].get("employee_id")
+        # If no department assignment found, try to find through project assignments
+        if not manager_id:
+            projects = await db.projects.find({"employee_ids": current_user.id}).to_list(length=None)
+            if projects:
+                # Get manager from first project
+                project = projects[0]
+                manager_id = project.get("manager_id")
+        
+        # If still no manager found, log a warning but allow the application to proceed
+        if not manager_id:
+            print(f"Warning: No manager found for employee {current_user.id}. Leave request will be created without manager assignment.")
         
         # Create leave application
         leave_application = {
