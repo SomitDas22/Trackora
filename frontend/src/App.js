@@ -10,7 +10,8 @@ import { Textarea } from './components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Badge } from './components/ui/badge';
-import { Clock, Play, Pause, LogOut, UserCheck, Coffee } from 'lucide-react';
+import { Clock, Play, Pause, LogOut, UserCheck, Coffee, Calendar, History, BarChart3 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './components/ui/table';
 import './App.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
