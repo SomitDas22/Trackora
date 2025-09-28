@@ -1867,13 +1867,27 @@ async def apply_leave(leave_data: LeaveApplicationCreate, current_user: User = D
                 detail=f"Insufficient {leave_data.leave_type} balance. Available: {balance[leave_type_key]['available']}"
             )
         
-        # Find employee's manager
-        employee = await db.employees.find_one({"email": current_user.email})
+        # Find employee's manager through manager-employee relationship or user department
         manager_id = None
-        if employee:
-            dept = await db.departments.find_one({"id": employee.get("department_id")})
-            if dept:
-                manager_id = dept.get("manager_id")
+        
+        # First, try to find if this user is directly assigned to any manager via manager assignments
+        manager_assignment = await db.managers.find({"employee_id": {"$exists": True}}).to_list(length=None)
+        
+        # Look for department where current user might be working under a manager
+        # Check if user has a department assignment in user profile or through manager relationships
+        user_department = None
+        
+        # Try to find user's department through existing manager-project relationships
+        projects = await db.projects.find({"employee_ids": current_user.id}).to_list(length=None)
+        if projects:
+            # Get manager from first project (employees usually belong to one department)
+            project = projects[0]
+            manager_id = project.get("manager_id")
+        else:
+            # Fallback: assign to first available manager if none found
+            managers = await db.managers.find({}).to_list(length=None)
+            if managers:
+                manager_id = managers[0].get("employee_id")
         
         # Create leave application
         leave_application = {
