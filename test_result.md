@@ -225,6 +225,18 @@ backend:
           agent: "testing"
           comment: "All logo upload APIs working correctly: POST /admin/upload-logo-base64 successfully handles valid PNG/JPEG base64 uploads with proper validation (file type, size limit 5MB, data format). DELETE /admin/remove-logo successfully removes logos. Organization settings integration verified - uploaded logos appear in GET /admin/organization-settings response. Authentication properly enforced (admin-only access). File validation working: rejects invalid base64, missing data, and oversized files. All test scenarios passed successfully."
 
+  - task: "Manager Status & Notifications API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Added GET /employee/manager-status to check if user is a manager, notification APIs (GET /employee/notifications, PUT /employee/notifications/{id}/read, GET /employee/notifications/unread-count), and automatic notification creation when leave requests are approved/rejected"
+
 frontend:
   - task: "Dashboard Cards UI"
     implemented: true
