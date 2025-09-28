@@ -276,13 +276,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Employee Projects API"
-    - "Leave Balance API"
-    - "Apply Leave API"
-    - "Leave Requests Management API"
-    - "Manager Leave Approval API"
-    - "IT Tickets API"
-    - "Admin Leave Settings API"
+    - "Dashboard Cards UI"
+    - "Manager Leave Approval UI"
+    - "Admin Leave Settings UI"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
