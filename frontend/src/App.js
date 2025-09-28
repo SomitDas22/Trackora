@@ -549,6 +549,22 @@ const AdminDashboard = ({ admin, onLogout }) => {
     }
   };
 
+  // Update organization settings
+  const updateOrganizationSettings = async () => {
+    if (!orgSettingsData.company_name) {
+      alert('Company name is required');
+      return;
+    }
+
+    try {
+      await axios.put(`${API}/admin/organization-settings`, orgSettingsData);
+      await fetchOrganizationSettings();
+      alert('Organization settings updated successfully!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to update organization settings');
+    }
+  };
+
   // Fetch user sessions
   const fetchUserSessions = async (userId) => {
     try {
