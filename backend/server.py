@@ -1941,6 +1941,83 @@ async def get_employee_leave_requests(current_user: User = Depends(get_current_u
         print(f"Error fetching leave requests: {e}")
         return []
 
+# Employee-Department Assignment APIs
+@api_router.post("/admin/assign-employee-department")
+async def assign_employee_department(
+    assignment_data: dict,
+    current_admin: User = Depends(get_current_admin)
+):
+    """Assign employee to department"""
+    try:
+        employee_id = assignment_data.get("employee_id")
+        department_id = assignment_data.get("department_id")
+        
+        if not employee_id or not department_id:
+            raise HTTPException(status_code=400, detail="Employee ID and Department ID are required")
+        
+        # Verify employee exists
+        employee = await db.users.find_one({"id": employee_id, "role": "employee"})
+        if not employee:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        # Verify department exists
+        department = await db.departments.find_one({"id": department_id})
+        if not department:
+            raise HTTPException(status_code=404, detail="Department not found")
+        
+        # Create or update employee department assignment
+        assignment = {
+            "id": str(uuid.uuid4()),
+            "employee_id": employee_id,
+            "department_id": department_id,
+            "assigned_at": datetime.now(timezone.utc)
+        }
+        
+        # Remove existing assignment if any
+        await db.employee_departments.delete_many({"employee_id": employee_id})
+        
+        # Add new assignment
+        await db.employee_departments.insert_one(assignment)
+        
+        return {"message": "Employee assigned to department successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error assigning employee to department: {e}")
+        raise HTTPException(status_code=500, detail="Failed to assign employee to department")
+
+@api_router.get("/admin/employee-department-assignments")
+async def get_employee_department_assignments(current_admin: User = Depends(get_current_admin)):
+    """Get all employee-department assignments"""
+    try:
+        assignments = await db.employee_departments.find({}).to_list(length=None)
+        
+        assignment_list = []
+        for assignment in assignments:
+            # Get employee details
+            employee = await db.users.find_one({"id": assignment["employee_id"]})
+            
+            # Get department details
+            department = await db.departments.find_one({"id": assignment["department_id"]})
+            
+            if employee and department:
+                assignment_list.append({
+                    "id": assignment["id"],
+                    "employee_id": assignment["employee_id"],
+                    "employee_name": employee["name"],
+                    "employee_email": employee["email"],
+                    "department_id": assignment["department_id"],
+                    "department_name": department["name"],
+                    "assigned_at": assignment["assigned_at"].isoformat()
+                })
+        
+        return assignment_list
+        
+    except Exception as e:
+        print(f"Error fetching employee-department assignments: {e}")
+        return []
+
 # Manager Status Check API
 @api_router.get("/employee/manager-status")
 async def check_manager_status(current_user: User = Depends(get_current_user)):
