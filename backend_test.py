@@ -811,6 +811,13 @@ class BackendTester:
         self.test_it_tickets_list_api()
         self.test_admin_leave_settings_get_api()
         self.test_admin_leave_settings_put_api()
+        
+        # Logo upload tests
+        self.test_logo_upload_api()
+        self.test_logo_remove_api()
+        self.test_organization_settings_logo_integration()
+        self.test_logo_upload_authentication()
+        
         self.test_authentication_scenarios()
         
         # Print summary
