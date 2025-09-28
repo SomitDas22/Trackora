@@ -548,6 +548,77 @@ const AdminDashboard = ({ admin, onLogout }) => {
     setShowEditHolidayModal(true);
   };
 
+  // Create new employee
+  const createNewEmployee = async () => {
+    if (!newEmployeeData.name || !newEmployeeData.email || !newEmployeeData.phone || !newEmployeeData.password) {
+      alert('Please fill in all required fields (Name, Email, Phone, Password)');
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/admin/create-employee`, newEmployeeData);
+      setShowCreateEmployeeModal(false);
+      setNewEmployeeData({
+        name: '', email: '', phone: '', password: '',
+        dob: '', blood_group: '', emergency_contact: '', address: '',
+        aadhar_card: '', designation: '', department: '', joining_date: '', release_date: ''
+      });
+      await fetchEmployees();
+      alert('Employee created successfully!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to create employee');
+    }
+  };
+
+  // Update employee
+  const updateEmployee = async () => {
+    if (!editingEmployee.name || !editingEmployee.email || !editingEmployee.phone) {
+      alert('Please fill in all required fields (Name, Email, Phone)');
+      return;
+    }
+
+    try {
+      await axios.put(`${API}/admin/update-employee/${editingEmployee.id}`, {
+        name: editingEmployee.name,
+        email: editingEmployee.email,
+        phone: editingEmployee.phone,
+        dob: editingEmployee.dob,
+        blood_group: editingEmployee.blood_group,
+        emergency_contact: editingEmployee.emergency_contact,
+        address: editingEmployee.address,
+        aadhar_card: editingEmployee.aadhar_card,
+        designation: editingEmployee.designation,
+        department: editingEmployee.department,
+        joining_date: editingEmployee.joining_date,
+        release_date: editingEmployee.release_date
+      });
+      setShowEditEmployeeModal(false);
+      setEditingEmployee(null);
+      await fetchEmployees();
+      alert('Employee updated successfully!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to update employee');
+    }
+  };
+
+  // Delete employee
+  const deleteEmployee = async (empId) => {
+    if (!confirm('Are you sure you want to delete this employee? This will also delete all their sessions and leave records.')) return;
+
+    try {
+      await axios.delete(`${API}/admin/delete-employee/${empId}`);
+      await fetchEmployees();
+      alert('Employee deleted successfully!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to delete employee');
+    }
+  };
+
+  const openEditEmployee = (employee) => {
+    setEditingEmployee({ ...employee });
+    setShowEditEmployeeModal(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Admin Header */}
