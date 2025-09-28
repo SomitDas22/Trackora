@@ -54,7 +54,10 @@ const AuthPage = ({ onLogin }) => {
 
       localStorage.setItem('token', response.data.access_token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
-      onLogin();
+      
+      // Fetch user data after successful authentication
+      const userResponse = await axios.get(`${API}/auth/me`);
+      onLogin(userResponse.data);
     } catch (err) {
       setError(err.response?.data?.detail || 'Authentication failed');
     } finally {
