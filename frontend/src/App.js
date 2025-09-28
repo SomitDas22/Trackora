@@ -1391,6 +1391,66 @@ const AdminDashboard = ({ admin, onLogout }) => {
           )}
         </DialogContent>
       </Dialog>
+      {/* Edit Holiday Modal */}
+      <Dialog open={showEditHolidayModal} onOpenChange={setShowEditHolidayModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Holiday</DialogTitle>
+          </DialogHeader>
+          {editingHoliday && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-holiday-name">Holiday Name</Label>
+                <Input
+                  id="edit-holiday-name"
+                  value={editingHoliday.name}
+                  onChange={(e) => setEditingHoliday({...editingHoliday, name: e.target.value})}
+                  placeholder="e.g., Christmas Day"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-holiday-date">Date</Label>
+                <Input
+                  id="edit-holiday-date"
+                  type="date"
+                  value={editingHoliday.date}
+                  onChange={(e) => setEditingHoliday({...editingHoliday, date: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-holiday-type">Type</Label>
+                <Select 
+                  value={editingHoliday.type} 
+                  onValueChange={(value) => setEditingHoliday({...editingHoliday, type: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Mandatory">Mandatory</SelectItem>
+                    <SelectItem value="Optional">Optional</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex space-x-2">
+                <Button onClick={updateHoliday} className="flex-1" data-testid="update-holiday-submit">
+                  Update Holiday
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowEditHolidayModal(false);
+                    setEditingHoliday(null);
+                  }} 
+                  variant="outline" 
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
