@@ -89,9 +89,9 @@ class BackendTester:
                     self.admin_id = me_response.json()["id"]
                 self.log_result("Admin Registration", True, "Test admin created successfully")
             else:
-                # Try to login with a default admin if creation fails
+                # Try to login with the existing admin if creation fails
                 default_admin_login = {
-                    "email": "admin@test.com",
+                    "email": "admin@worktracker.com",
                     "password": "admin123"
                 }
                 login_response = requests.post(f"{API_BASE}/admin/auth/login", json=default_admin_login)
