@@ -405,6 +405,46 @@ const AdminDashboard = ({ admin, onLogout }) => {
     }
   };
 
+  // Fetch organization tree
+  const fetchOrganizationTree = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/organization-tree`);
+      setOrganizationTree(response.data);
+    } catch (err) {
+      console.error('Error fetching organization tree:', err);
+    }
+  };
+
+  // Fetch departments
+  const fetchDepartments = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/departments`);
+      setDepartments(response.data);
+    } catch (err) {
+      console.error('Error fetching departments:', err);
+    }
+  };
+
+  // Fetch managers
+  const fetchManagers = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/managers`);
+      setManagers(response.data);
+    } catch (err) {
+      console.error('Error fetching managers:', err);
+    }
+  };
+
+  // Fetch projects
+  const fetchProjects = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/projects`);
+      setProjects(response.data);
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+    }
+  };
+
   // Fetch user sessions
   const fetchUserSessions = async (userId) => {
     try {
