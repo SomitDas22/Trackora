@@ -127,17 +127,29 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 def calculate_effective_seconds(session_start: datetime, breaks: List[dict]) -> int:
     """Calculate effective work seconds excluding breaks"""
     now = datetime.now(timezone.utc)
+    
+    # Ensure session_start is timezone-aware
+    if session_start.tzinfo is None:
+        session_start = session_start.replace(tzinfo=timezone.utc)
+    
     total_time = (now - session_start).total_seconds()
     
     break_seconds = 0
     for break_item in breaks:
+        break_start = break_item['start_time']
+        if break_start.tzinfo is None:
+            break_start = break_start.replace(tzinfo=timezone.utc)
+            
         if break_item.get('end_time'):
             # Closed break
-            break_duration = (break_item['end_time'] - break_item['start_time']).total_seconds()
+            break_end = break_item['end_time']
+            if break_end.tzinfo is None:
+                break_end = break_end.replace(tzinfo=timezone.utc)
+            break_duration = (break_end - break_start).total_seconds()
             break_seconds += break_duration
         else:
             # Active break
-            break_duration = (now - break_item['start_time']).total_seconds()
+            break_duration = (now - break_start).total_seconds()
             break_seconds += break_duration
     
     return max(0, int(total_time - break_seconds))
