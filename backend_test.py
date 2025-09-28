@@ -478,6 +478,279 @@ class BackendTester:
         except Exception as e:
             self.log_result("Admin Leave Settings PUT API", False, f"Exception: {str(e)}")
     
+    def test_logo_upload_api(self):
+        """Test POST /api/admin/upload-logo-base64"""
+        print("\n=== Testing Logo Upload API ===")
+        
+        if not self.admin_token:
+            self.log_result("Logo Upload API", False, "No admin token available")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        # Test valid PNG base64 upload
+        # Small 1x1 PNG image in base64
+        valid_png_base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+        valid_data_url = f"data:image/png;base64,{valid_png_base64}"
+        
+        logo_data = {
+            "logo_base64": valid_data_url
+        }
+        
+        try:
+            response = requests.post(f"{API_BASE}/admin/upload-logo-base64", json=logo_data, headers=headers)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "logo_url" in result and result["logo_url"]:
+                    self.log_result("Logo Upload API - Valid PNG", True, "Logo uploaded successfully", 
+                                  {"logo_url_length": len(result["logo_url"])})
+                else:
+                    self.log_result("Logo Upload API - Valid PNG", False, "No logo URL returned")
+            else:
+                self.log_result("Logo Upload API - Valid PNG", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_result("Logo Upload API - Valid PNG", False, f"Exception: {str(e)}")
+        
+        # Test valid JPEG base64 upload
+        # Small JPEG image in base64
+        valid_jpeg_base64 = "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/wA=="
+        valid_jpeg_data_url = f"data:image/jpeg;base64,{valid_jpeg_base64}"
+        
+        jpeg_logo_data = {
+            "logo_base64": valid_jpeg_data_url
+        }
+        
+        try:
+            response = requests.post(f"{API_BASE}/admin/upload-logo-base64", json=jpeg_logo_data, headers=headers)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "logo_url" in result and result["logo_url"]:
+                    self.log_result("Logo Upload API - Valid JPEG", True, "JPEG logo uploaded successfully")
+                else:
+                    self.log_result("Logo Upload API - Valid JPEG", False, "No logo URL returned")
+            else:
+                self.log_result("Logo Upload API - Valid JPEG", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_result("Logo Upload API - Valid JPEG", False, f"Exception: {str(e)}")
+        
+        # Test invalid base64 data
+        invalid_logo_data = {
+            "logo_base64": "invalid_base64_data"
+        }
+        
+        try:
+            response = requests.post(f"{API_BASE}/admin/upload-logo-base64", json=invalid_logo_data, headers=headers)
+            
+            if response.status_code == 400:
+                self.log_result("Logo Upload API - Invalid Base64", True, "Correctly rejected invalid base64 data")
+            else:
+                self.log_result("Logo Upload API - Invalid Base64", False, 
+                              f"Should return 400 for invalid base64, got {response.status_code}")
+                
+        except Exception as e:
+            self.log_result("Logo Upload API - Invalid Base64", False, f"Exception: {str(e)}")
+        
+        # Test missing logo data
+        empty_logo_data = {}
+        
+        try:
+            response = requests.post(f"{API_BASE}/admin/upload-logo-base64", json=empty_logo_data, headers=headers)
+            
+            if response.status_code == 400:
+                self.log_result("Logo Upload API - Missing Data", True, "Correctly rejected missing logo data")
+            else:
+                self.log_result("Logo Upload API - Missing Data", False, 
+                              f"Should return 400 for missing data, got {response.status_code}")
+                
+        except Exception as e:
+            self.log_result("Logo Upload API - Missing Data", False, f"Exception: {str(e)}")
+        
+        # Test oversized file (simulate by creating large base64 string)
+        # Create a base64 string that would exceed 5MB when decoded
+        large_base64 = "A" * (7 * 1024 * 1024)  # 7MB of 'A' characters
+        large_logo_data = {
+            "logo_base64": f"data:image/png;base64,{large_base64}"
+        }
+        
+        try:
+            response = requests.post(f"{API_BASE}/admin/upload-logo-base64", json=large_logo_data, headers=headers)
+            
+            if response.status_code == 400:
+                self.log_result("Logo Upload API - File Size Limit", True, "Correctly rejected oversized file")
+            else:
+                self.log_result("Logo Upload API - File Size Limit", False, 
+                              f"Should return 400 for oversized file, got {response.status_code}")
+                
+        except Exception as e:
+            self.log_result("Logo Upload API - File Size Limit", False, f"Exception: {str(e)}")
+    
+    def test_logo_remove_api(self):
+        """Test DELETE /api/admin/remove-logo"""
+        print("\n=== Testing Logo Remove API ===")
+        
+        if not self.admin_token:
+            self.log_result("Logo Remove API", False, "No admin token available")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        # First upload a logo to ensure there's something to remove
+        valid_png_base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+        valid_data_url = f"data:image/png;base64,{valid_png_base64}"
+        
+        logo_data = {
+            "logo_base64": valid_data_url
+        }
+        
+        try:
+            # Upload logo first
+            upload_response = requests.post(f"{API_BASE}/admin/upload-logo-base64", json=logo_data, headers=headers)
+            
+            if upload_response.status_code == 200:
+                # Now test removing the logo
+                remove_response = requests.delete(f"{API_BASE}/admin/remove-logo", headers=headers)
+                
+                if remove_response.status_code == 200:
+                    self.log_result("Logo Remove API", True, "Logo removed successfully")
+                    
+                    # Verify logo was removed by checking organization settings
+                    settings_response = requests.get(f"{API_BASE}/admin/organization-settings", headers=headers)
+                    if settings_response.status_code == 200:
+                        settings = settings_response.json()
+                        if settings.get("company_logo") == "":
+                            self.log_result("Logo Remove API - Verification", True, "Logo removal verified in organization settings")
+                        else:
+                            self.log_result("Logo Remove API - Verification", False, "Logo still present in organization settings")
+                    else:
+                        self.log_result("Logo Remove API - Verification", False, "Could not verify logo removal")
+                else:
+                    self.log_result("Logo Remove API", False, f"HTTP {remove_response.status_code}: {remove_response.text}")
+            else:
+                # Test removing when no logo exists
+                remove_response = requests.delete(f"{API_BASE}/admin/remove-logo", headers=headers)
+                
+                if remove_response.status_code in [200, 404]:
+                    self.log_result("Logo Remove API - No Logo", True, "Handled removal when no logo exists")
+                else:
+                    self.log_result("Logo Remove API - No Logo", False, 
+                                  f"Unexpected response when no logo exists: {remove_response.status_code}")
+                
+        except Exception as e:
+            self.log_result("Logo Remove API", False, f"Exception: {str(e)}")
+    
+    def test_organization_settings_logo_integration(self):
+        """Test GET /api/admin/organization-settings returns logo URL"""
+        print("\n=== Testing Organization Settings Logo Integration ===")
+        
+        if not self.admin_token:
+            self.log_result("Organization Settings Logo Integration", False, "No admin token available")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        # First upload a logo
+        valid_png_base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+        valid_data_url = f"data:image/png;base64,{valid_png_base64}"
+        
+        logo_data = {
+            "logo_base64": valid_data_url
+        }
+        
+        try:
+            # Upload logo
+            upload_response = requests.post(f"{API_BASE}/admin/upload-logo-base64", json=logo_data, headers=headers)
+            
+            if upload_response.status_code == 200:
+                # Get organization settings and verify logo is present
+                settings_response = requests.get(f"{API_BASE}/admin/organization-settings", headers=headers)
+                
+                if settings_response.status_code == 200:
+                    settings = settings_response.json()
+                    
+                    if "company_logo" in settings and settings["company_logo"]:
+                        if settings["company_logo"].startswith("data:image"):
+                            self.log_result("Organization Settings Logo Integration", True, 
+                                          "Logo URL correctly returned in organization settings", 
+                                          {"logo_url_prefix": settings["company_logo"][:50] + "..."})
+                        else:
+                            self.log_result("Organization Settings Logo Integration", False, 
+                                          "Logo URL format is incorrect")
+                    else:
+                        self.log_result("Organization Settings Logo Integration", False, 
+                                      "Logo not found in organization settings")
+                else:
+                    self.log_result("Organization Settings Logo Integration", False, 
+                                  f"HTTP {settings_response.status_code}: {settings_response.text}")
+            else:
+                self.log_result("Organization Settings Logo Integration", False, 
+                              "Could not upload logo for integration test")
+                
+        except Exception as e:
+            self.log_result("Organization Settings Logo Integration", False, f"Exception: {str(e)}")
+    
+    def test_logo_upload_authentication(self):
+        """Test logo upload endpoints with different authentication scenarios"""
+        print("\n=== Testing Logo Upload Authentication ===")
+        
+        # Test logo upload without authentication
+        valid_png_base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+        valid_data_url = f"data:image/png;base64,{valid_png_base64}"
+        
+        logo_data = {
+            "logo_base64": valid_data_url
+        }
+        
+        try:
+            response = requests.post(f"{API_BASE}/admin/upload-logo-base64", json=logo_data)
+            if response.status_code == 401:
+                self.log_result("Logo Upload Authentication - No Token", True, "Correctly rejected unauthenticated request")
+            else:
+                self.log_result("Logo Upload Authentication - No Token", False, 
+                              f"Should return 401 but got {response.status_code}")
+        except Exception as e:
+            self.log_result("Logo Upload Authentication - No Token", False, f"Exception: {str(e)}")
+        
+        # Test logo upload with employee token (should fail)
+        if self.employee_token:
+            headers = {"Authorization": f"Bearer {self.employee_token}"}
+            try:
+                response = requests.post(f"{API_BASE}/admin/upload-logo-base64", json=logo_data, headers=headers)
+                if response.status_code == 403:
+                    self.log_result("Logo Upload Authentication - Employee Token", True, "Correctly rejected employee accessing admin endpoint")
+                else:
+                    self.log_result("Logo Upload Authentication - Employee Token", False, 
+                                  f"Should return 403 but got {response.status_code}")
+            except Exception as e:
+                self.log_result("Logo Upload Authentication - Employee Token", False, f"Exception: {str(e)}")
+        
+        # Test logo remove without authentication
+        try:
+            response = requests.delete(f"{API_BASE}/admin/remove-logo")
+            if response.status_code == 401:
+                self.log_result("Logo Remove Authentication - No Token", True, "Correctly rejected unauthenticated request")
+            else:
+                self.log_result("Logo Remove Authentication - No Token", False, 
+                              f"Should return 401 but got {response.status_code}")
+        except Exception as e:
+            self.log_result("Logo Remove Authentication - No Token", False, f"Exception: {str(e)}")
+        
+        # Test logo remove with employee token (should fail)
+        if self.employee_token:
+            headers = {"Authorization": f"Bearer {self.employee_token}"}
+            try:
+                response = requests.delete(f"{API_BASE}/admin/remove-logo", headers=headers)
+                if response.status_code == 403:
+                    self.log_result("Logo Remove Authentication - Employee Token", True, "Correctly rejected employee accessing admin endpoint")
+                else:
+                    self.log_result("Logo Remove Authentication - Employee Token", False, 
+                                  f"Should return 403 but got {response.status_code}")
+            except Exception as e:
+                self.log_result("Logo Remove Authentication - Employee Token", False, f"Exception: {str(e)}")
+
     def test_authentication_scenarios(self):
         """Test authentication scenarios"""
         print("\n=== Testing Authentication Scenarios ===")
