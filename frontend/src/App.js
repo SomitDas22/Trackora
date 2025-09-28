@@ -419,7 +419,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
 
   // Add new holiday
   const addNewHoliday = async () => {
-    if (!newHolidayData.date || !newHolidayData.name) {
+    if (!newHolidayData.date || !newHolidayData.name || !newHolidayData.type) {
       alert('Please fill all fields');
       return;
     }
@@ -427,7 +427,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
     try {
       await axios.post(`${API}/admin/add-holiday`, newHolidayData);
       setShowHolidayModal(false);
-      setNewHolidayData({ date: '', name: '' });
+      setNewHolidayData({ date: '', name: '', type: 'Mandatory' });
       await fetchHolidaysData();
       alert('Holiday added successfully!');
     } catch (err) {
