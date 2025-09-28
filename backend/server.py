@@ -1048,6 +1048,24 @@ class ManagerAssignment(BaseModel):
     manager_id: str
     employee_ids: List[str]
 
+class DepartmentCreate(BaseModel):
+    name: str
+    description: str = ""
+
+class ManagerCreate(BaseModel):
+    employee_id: str  # Employee who becomes manager
+    department_id: str
+
+class ProjectCreate(BaseModel):
+    name: str
+    description: str = ""
+    department_id: str
+    manager_id: str
+    employee_ids: List[str] = []
+    start_date: str = ""
+    end_date: str = ""
+    status: str = "Active"  # Active, Completed, On Hold
+
 @api_router.get("/admin/manager-assignments")
 async def get_manager_assignments(current_admin: User = Depends(get_current_admin)):
     """Get all manager assignments"""
