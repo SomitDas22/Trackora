@@ -53,6 +53,35 @@ class UserCreate(BaseModel):
     phone: str
     password: str
 
+class EmployeeCreate(BaseModel):
+    name: str
+    email: EmailStr
+    phone: str
+    password: str
+    dob: str = ""
+    blood_group: str = ""
+    emergency_contact: str = ""
+    address: str = ""
+    aadhar_card: str = ""
+    designation: str = ""
+    department: str = ""
+    joining_date: str = ""
+    release_date: str = ""
+
+class EmployeeUpdate(BaseModel):
+    name: str
+    email: EmailStr
+    phone: str
+    dob: str = ""
+    blood_group: str = ""
+    emergency_contact: str = ""
+    address: str = ""
+    aadhar_card: str = ""
+    designation: str = ""
+    department: str = ""
+    joining_date: str = ""
+    release_date: str = ""
+
 class UserLogin(BaseModel):
     email_or_phone: str
     password: str
