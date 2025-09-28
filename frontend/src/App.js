@@ -628,6 +628,16 @@ function App() {
     }
   }, []);
 
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -645,9 +655,9 @@ function App() {
         <Route 
           path="/" 
           element={
-            isAuthenticated ? 
-              <Dashboard user={user} onLogout={() => setIsAuthenticated(false)} /> :
-              <AuthPage onLogin={() => setIsAuthenticated(true)} />
+            isAuthenticated && user ? 
+              <Dashboard user={user} onLogout={handleLogout} /> :
+              <AuthPage onLogin={handleLogin} />
           } 
         />
       </Routes>
