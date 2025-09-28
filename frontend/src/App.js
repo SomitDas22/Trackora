@@ -370,6 +370,9 @@ const AdminDashboard = ({ admin, onLogout }) => {
   useEffect(() => {
     fetchUsers();
     fetchAdminStats();
+    fetchAdminUsers();
+    fetchHolidaysData();
+    fetchManagerAssignments();
   }, []);
 
   const handleLogout = () => {
