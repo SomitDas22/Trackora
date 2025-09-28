@@ -1333,6 +1333,96 @@ async def get_organization_tree(current_admin: User = Depends(get_current_admin)
         }
     }
 
+# Organization Settings Management
+@api_router.get("/admin/organization-settings")
+async def get_organization_settings(current_admin: User = Depends(get_current_admin)):
+    """Get organization settings"""
+    settings = await db.organization_settings.find_one({}, {"_id": 0})
+    
+    if not settings:
+        # Return default settings if none exist
+        default_settings = {
+            "id": str(uuid.uuid4()),
+            "company_name": "Work Hours Tracker",
+            "company_logo": "",
+            "establishment_date": "",
+            "company_email": "",
+            "founder_name": "",
+            "founder_email": "",
+            "address": "",
+            "phone": "",
+            "website": "",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.organization_settings.insert_one(default_settings)
+        return default_settings
+    
+    return settings
+
+@api_router.put("/admin/organization-settings")
+async def update_organization_settings(settings_data: OrganizationUpdate, current_admin: User = Depends(get_current_admin)):
+    """Update organization settings"""
+    existing_settings = await db.organization_settings.find_one({})
+    
+    update_data = {
+        "company_name": settings_data.company_name,
+        "establishment_date": settings_data.establishment_date,
+        "company_email": settings_data.company_email,
+        "founder_name": settings_data.founder_name,
+        "founder_email": settings_data.founder_email,
+        "address": settings_data.address,
+        "phone": settings_data.phone,
+        "website": settings_data.website,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    if existing_settings:
+        await db.organization_settings.update_one(
+            {"id": existing_settings["id"]}, 
+            {"$set": update_data}
+        )
+    else:
+        update_data.update({
+            "id": str(uuid.uuid4()),
+            "company_logo": "",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        await db.organization_settings.insert_one(update_data)
+    
+    return {"message": "Organization settings updated successfully"}
+
+@api_router.post("/admin/upload-logo")
+async def upload_company_logo(current_admin: User = Depends(get_current_admin)):
+    """Upload company logo (placeholder for file upload)"""
+    # For now, we'll use a placeholder. In production, you'd handle actual file upload
+    logo_data = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+    
+    # Update organization settings with logo
+    await db.organization_settings.update_one(
+        {},
+        {"$set": {"company_logo": logo_data}},
+        upsert=True
+    )
+    
+    return {"message": "Logo uploaded successfully", "logo_url": logo_data}
+
+# Public endpoint for organization info (for login/signup screens)
+@api_router.get("/organization-info")
+async def get_public_organization_info():
+    """Get public organization information for branding"""
+    settings = await db.organization_settings.find_one({}, {"_id": 0})
+    
+    if not settings:
+        return {
+            "company_name": "Work Hours Tracker",
+            "company_logo": ""
+        }
+    
+    return {
+        "company_name": settings.get("company_name", "Work Hours Tracker"),
+        "company_logo": settings.get("company_logo", "")
+    }
+
 class ManagerAssignment(BaseModel):
     manager_id: str
     employee_ids: List[str]
