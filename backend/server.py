@@ -2488,6 +2488,52 @@ async def startup_db():
         )
         await db.users.insert_one(default_admin.dict())
         print("Default admin created: admin@worktracker.com / admin123")
+    
+    # Create sample department and manager assignments if none exist
+    existing_departments = await db.departments.count_documents({})
+    if existing_departments == 0:
+        # Create a default department
+        default_dept = {
+            "id": str(uuid.uuid4()),
+            "name": "General",
+            "description": "Default department for all employees"
+        }
+        await db.departments.insert_one(default_dept)
+        
+        # Create a default manager (use admin as manager for now)
+        if existing_admin:
+            default_manager = {
+                "id": str(uuid.uuid4()),
+                "employee_id": default_admin.id,
+                "department_id": default_dept["id"],
+                "assigned_at": datetime.now(timezone.utc)
+            }
+            await db.managers.insert_one(default_manager)
+            
+        print("Default department and manager created")
+    
+    # Auto-assign all employees without department to the default department
+    unassigned_employees = []
+    all_employees = await db.users.find({"role": "employee"}).to_list(length=None)
+    
+    for employee in all_employees:
+        existing_assignment = await db.employee_departments.find_one({"employee_id": employee["id"]})
+        if not existing_assignment:
+            unassigned_employees.append(employee)
+    
+    if unassigned_employees:
+        # Get default department
+        default_dept = await db.departments.find_one({"name": "General"})
+        if default_dept:
+            for employee in unassigned_employees:
+                assignment = {
+                    "id": str(uuid.uuid4()),
+                    "employee_id": employee["id"],
+                    "department_id": default_dept["id"],
+                    "assigned_at": datetime.now(timezone.utc)
+                }
+                await db.employee_departments.insert_one(assignment)
+            print(f"Auto-assigned {len(unassigned_employees)} employees to General department")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
