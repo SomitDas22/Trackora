@@ -298,6 +298,11 @@ const Dashboard = ({ user, onLogout }) => {
       setActiveSession(null);
       setShowTimesheetModal(false);
       setTimesheetData({ task_id: '', work_description: '', status: 'Completed' });
+      
+      // Refresh data after session ends
+      await fetchSessionHistory();
+      await fetchCalendarData();
+      await fetchDashboardStats();
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to apply half day');
     } finally {
@@ -317,6 +322,11 @@ const Dashboard = ({ user, onLogout }) => {
       setActiveSession(null);
       setShowTimesheetModal(false);
       setTimesheetData({ task_id: '', work_description: '', status: 'Completed' });
+      
+      // Refresh data after session ends
+      await fetchSessionHistory();
+      await fetchCalendarData();
+      await fetchDashboardStats();
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to end session');
     } finally {
