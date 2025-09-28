@@ -3644,23 +3644,23 @@ function App() {
           path="/" 
           element={
             isAuthenticated && user ? 
-              <Dashboard user={user} onLogout={handleLogout} /> :
-              <AuthPage onLogin={handleLogin} />
+              <Dashboard user={user} onLogout={handleLogout} orgBranding={orgBranding} /> :
+              <AuthPage onLogin={handleLogin} orgBranding={orgBranding} />
           } 
         />
         <Route 
           path="/admin-login" 
           element={
             isAdminAuthenticated && admin ?
-              <AdminDashboard admin={admin} onLogout={handleAdminLogout} /> :
-              <AdminLoginPage onAdminLogin={handleAdminLogin} />
+              <AdminDashboard admin={admin} onLogout={handleAdminLogout} orgBranding={orgBranding} /> :
+              <AdminLoginPage onAdminLogin={handleAdminLogin} orgBranding={orgBranding} />
           } 
         />
         <Route 
           path="/admin" 
           element={
             isAdminAuthenticated && admin ?
-              <AdminDashboard admin={admin} onLogout={handleAdminLogout} /> :
+              <AdminDashboard admin={admin} onLogout={handleAdminLogout} orgBranding={orgBranding} /> :
               <Navigate to="/admin-login" />
           } 
         />
