@@ -4039,10 +4039,13 @@ const Dashboard = ({ user, onLogout, orgBranding }) => {
     fetchCalendarData();
     fetchDashboardStats();
     checkCanStartToday();
+    checkManagerStatus();
+    fetchNotifications();
     
     const interval = setInterval(() => {
       fetchActiveSession();
       checkCanStartToday();
+      fetchNotifications(); // Also refresh notifications
     }, 5000); // Refresh every 5 seconds
     return () => clearInterval(interval);
   }, []);
