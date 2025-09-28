@@ -300,9 +300,8 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Dashboard Cards UI"
-    - "Manager Leave Approval UI"
-    - "Admin Leave Settings UI"
+    - "Logo Upload API"
+    - "Logo Upload UI"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
