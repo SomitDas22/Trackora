@@ -190,6 +190,7 @@ const Dashboard = ({ user, onLogout }) => {
   const [dashboardStats, setDashboardStats] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [canStartToday, setCanStartToday] = useState(null);
 
   // Fetch active session
   const fetchActiveSession = async () => {
