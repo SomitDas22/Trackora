@@ -953,6 +953,121 @@ const AdminDashboard = ({ admin, onLogout }) => {
         </Tabs>
       </div>
 
+      {/* Admin Users Management Page */}
+      {showAdminUsersPage && (
+        <div className="fixed inset-0 bg-slate-800 z-50 overflow-y-auto">
+          <div className="max-w-6xl mx-auto p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Admin Users Management</h2>
+                <p className="text-slate-300">Manage all admin users and their permissions</p>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => setShowCreateAdminModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  data-testid="add-admin-page-btn"
+                >
+                  Add New Admin
+                </Button>
+                <Button
+                  onClick={() => setShowAdminUsersPage(false)}
+                  variant="outline"
+                  className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  data-testid="close-admin-users-page"
+                >
+                  ← Back to Dashboard
+                </Button>
+              </div>
+            </div>
+
+            {/* Admin Users Table */}
+            <Card className="bg-slate-700 border-slate-600">
+              <CardHeader>
+                <CardTitle className="text-white">All Admin Users ({adminUsers.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {adminUsers.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-600">
+                          <TableHead className="text-slate-300">Name</TableHead>
+                          <TableHead className="text-slate-300">Email</TableHead>
+                          <TableHead className="text-slate-300">Created Date</TableHead>
+                          <TableHead className="text-slate-300">Status</TableHead>
+                          <TableHead className="text-slate-300">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {adminUsers.map((admin) => (
+                          <TableRow key={admin.id} className="border-slate-600 hover:bg-slate-600">
+                            <TableCell className="font-medium text-white">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                  {admin.name.charAt(0).toUpperCase()}
+                                </div>
+                                <span>{admin.name}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-slate-300">{admin.email}</TableCell>
+                            <TableCell className="text-slate-300">
+                              {new Date(admin.created_at).toLocaleDateString('en-IN')}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className="bg-green-600 text-green-100">
+                                {admin.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button
+                                  onClick={() => openEditAdmin(admin)}
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+                                  data-testid={`edit-admin-${admin.id}`}
+                                >
+                                  Edit
+                                </Button>
+                                {admin.id !== admin.id && (
+                                  <Button
+                                    onClick={() => deleteAdmin(admin.id)}
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                                    data-testid={`delete-admin-${admin.id}`}
+                                  >
+                                    Delete
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <UserCheck className="h-16 w-16 mx-auto mb-4 opacity-50 text-slate-400" />
+                    <h3 className="text-lg font-medium text-slate-300 mb-2">No Admin Users</h3>
+                    <p className="text-slate-400">Create your first admin user to get started</p>
+                    <Button
+                      onClick={() => setShowCreateAdminModal(true)}
+                      className="mt-4 bg-blue-600 hover:bg-blue-700"
+                    >
+                      Add First Admin
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
       {/* Create Admin Modal */}
       <Dialog open={showCreateAdminModal} onOpenChange={setShowCreateAdminModal}>
         <DialogContent className="max-w-md">
