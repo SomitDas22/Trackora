@@ -323,6 +323,36 @@ const AdminDashboard = ({ admin, onLogout }) => {
     }
   };
 
+  // Fetch admin users
+  const fetchAdminUsers = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/admin-users`);
+      setAdminUsers(response.data);
+    } catch (err) {
+      console.error('Error fetching admin users:', err);
+    }
+  };
+
+  // Fetch holidays data
+  const fetchHolidaysData = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/holidays-management`);
+      setHolidaysData(response.data);
+    } catch (err) {
+      console.error('Error fetching holidays data:', err);
+    }
+  };
+
+  // Fetch manager assignments
+  const fetchManagerAssignments = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/manager-assignments`);
+      setManagerAssignments(response.data);
+    } catch (err) {
+      console.error('Error fetching manager assignments:', err);
+    }
+  };
+
   // Fetch user sessions
   const fetchUserSessions = async (userId) => {
     try {
