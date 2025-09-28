@@ -2812,7 +2812,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
   );
 };
 
-const Dashboard = ({ user, onLogout }) => {
+const Dashboard = ({ user, onLogout, orgBranding }) => {
   const [activeSession, setActiveSession] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showTimesheetModal, setShowTimesheetModal] = useState(false);
