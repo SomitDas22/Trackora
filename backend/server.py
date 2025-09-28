@@ -744,6 +744,91 @@ async def delete_holiday(holiday_id: str, current_admin: User = Depends(get_curr
     
     return {"message": "Holiday deleted successfully"}
 
+@api_router.get("/admin/users-on-leave")
+async def get_users_on_leave(current_admin: User = Depends(get_current_admin)):
+    """Get users currently on leave or recent leave data"""
+    now = datetime.now(timezone.utc)
+    today = now.date().isoformat()
+    
+    # Get users with half-day leaves today
+    today_leaves = await db.leaves.find({"date": today}).to_list(length=None)
+    
+    # Get users with recent half-day applications (last 7 days)
+    week_ago = (now - timedelta(days=7)).date().isoformat()
+    recent_leaves = await db.leaves.find({
+        "date": {"$gte": week_ago, "$lte": today}
+    }).to_list(length=None)
+    
+    # Get detailed user info for leaves
+    leave_users = []
+    for leave in recent_leaves:
+        user = await db.users.find_one({"id": leave["user_id"]})
+        if user:
+            leave_users.append({
+                "user_id": leave["user_id"],
+                "user_name": user["name"],
+                "user_email": user["email"],
+                "leave_date": leave["date"],
+                "leave_type": leave["type"],
+                "reason": leave.get("reason", "Half day application"),
+                "status": leave.get("status", "approved")
+            })
+    
+    return {
+        "users_on_leave_today": len(today_leaves),
+        "total_leaves_this_week": len(recent_leaves),
+        "leave_details": leave_users
+    }
+
+class AdminUpdate(BaseModel):
+    name: str
+    email: EmailStr
+
+@api_router.put("/admin/update-admin/{admin_id}")
+async def update_admin(admin_id: str, admin_data: AdminUpdate, current_admin: User = Depends(get_current_admin)):
+    """Update admin user details"""
+    # Check if admin exists
+    existing_admin = await db.users.find_one({"id": admin_id, "role": "admin"})
+    if not existing_admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+    
+    # Check if email is already taken by another user
+    email_check = await db.users.find_one({"email": admin_data.email, "id": {"$ne": admin_id}})
+    if email_check:
+        raise HTTPException(status_code=400, detail="Email already exists")
+    
+    # Update admin
+    await db.users.update_one(
+        {"id": admin_id},
+        {"$set": {"name": admin_data.name, "email": admin_data.email}}
+    )
+    
+    return {"message": "Admin updated successfully"}
+
+@api_router.delete("/admin/delete-admin/{admin_id}")
+async def delete_admin(admin_id: str, current_admin: User = Depends(get_current_admin)):
+    """Delete admin user"""
+    # Prevent deleting own account
+    if admin_id == current_admin.id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own admin account")
+    
+    # Check if admin exists
+    existing_admin = await db.users.find_one({"id": admin_id, "role": "admin"})
+    if not existing_admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+    
+    # Check if this is the last admin
+    admin_count = await db.users.count_documents({"role": "admin"})
+    if admin_count <= 1:
+        raise HTTPException(status_code=400, detail="Cannot delete the last admin user")
+    
+    # Delete admin
+    result = await db.users.delete_one({"id": admin_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Admin not found")
+    
+    return {"message": "Admin deleted successfully"}
+
 class ManagerAssignment(BaseModel):
     manager_id: str
     employee_ids: List[str]
