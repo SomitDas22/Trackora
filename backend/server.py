@@ -709,7 +709,8 @@ async def get_holidays_management(current_admin: User = Depends(get_current_admi
         holidays.append({
             "id": h.get("id", ""),
             "name": h.get("name", ""),
-            "date": h.get("date", "")
+            "date": h.get("date", ""),
+            "type": h.get("type", "Mandatory")
         })
     
     return {
