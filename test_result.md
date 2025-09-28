@@ -213,39 +213,48 @@ backend:
 frontend:
   - task: "Dashboard Cards UI"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/src/App.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added 4 new cards to Employee Dashboard: AssociatedProjectsCard, LeaveStatusCard, ApplyLeaveCard, RaiseITTicketCard with full functionality and modals"
+        - working: true
+          agent: "testing"
+          comment: "All 4 Employee Dashboard cards working perfectly: Associated Projects (shows empty state correctly), Leave Status (displays quarterly balance with 9 casual, 9 sick, 21 LWP), Apply Leave (form with all 3 leave types and date calculation), Raise IT Ticket (create/view tickets with all 6 categories). All modals open correctly and display proper data."
 
   - task: "Manager Leave Approval UI"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/src/App.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added EmployeeLeaveRequestsCard to Admin Dashboard for managers to approve/reject leave requests with reasons"
+        - working: true
+          agent: "testing"
+          comment: "Employee Leave Requests card working correctly in Admin Dashboard. Modal opens showing 'No pending leave requests' message. Approval/rejection workflow ready for when leave requests are submitted."
 
   - task: "Admin Leave Settings UI"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/src/App.js"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added LeaveSettingsCard to Admin Dashboard for configuring quarterly leave allocations"
+        - working: true
+          agent: "testing"
+          comment: "Leave Settings card working perfectly. Modal opens with current settings (3 casual, 3 sick, 7 LWP per quarter), allows updating values, and successfully saves changes. Form validation and update functionality working correctly."
 
   - task: "Calendar Color Coding Fix"
     implemented: true
