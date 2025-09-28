@@ -445,6 +445,45 @@ const AdminDashboard = ({ admin, onLogout }) => {
     }
   };
 
+  // Update admin
+  const updateAdmin = async () => {
+    if (!editingAdmin.name || !editingAdmin.email) {
+      alert('Please fill all fields');
+      return;
+    }
+
+    try {
+      await axios.put(`${API}/admin/update-admin/${editingAdmin.id}`, {
+        name: editingAdmin.name,
+        email: editingAdmin.email
+      });
+      setShowEditAdminModal(false);
+      setEditingAdmin(null);
+      await fetchAdminUsers();
+      alert('Admin updated successfully!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to update admin');
+    }
+  };
+
+  // Delete admin
+  const deleteAdmin = async (adminId) => {
+    if (!confirm('Are you sure you want to delete this admin? This action cannot be undone.')) return;
+
+    try {
+      await axios.delete(`${API}/admin/delete-admin/${adminId}`);
+      await fetchAdminUsers();
+      alert('Admin deleted successfully!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to delete admin');
+    }
+  };
+
+  const openEditAdmin = (admin) => {
+    setEditingAdmin({ ...admin });
+    setShowEditAdminModal(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Admin Header */}
