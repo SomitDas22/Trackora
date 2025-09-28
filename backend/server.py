@@ -891,6 +891,159 @@ async def delete_admin(admin_id: str, current_admin: User = Depends(get_current_
     
     return {"message": "Admin deleted successfully"}
 
+@api_router.get("/admin/employees")
+async def get_all_employees(current_admin: User = Depends(get_current_admin)):
+    """Get all employees with detailed information"""
+    employees = await db.users.find({"role": "employee"}).to_list(length=None)
+    
+    employee_list = []
+    for emp_doc in employees:
+        # Calculate status based on release_date
+        status = "Active"
+        if emp_doc.get("release_date") and emp_doc["release_date"].strip():
+            try:
+                release_date = datetime.fromisoformat(emp_doc["release_date"])
+                if release_date <= datetime.now():
+                    status = "Inactive"
+            except:
+                pass
+        
+        # Get session and leave stats
+        total_sessions = await db.sessions.count_documents({"user_id": emp_doc["id"], "end_time": {"$ne": None}})
+        total_leaves = await db.leaves.count_documents({"user_id": emp_doc["id"]})
+        
+        employee_data = {
+            "id": emp_doc["id"],
+            "name": emp_doc["name"],
+            "email": emp_doc["email"],
+            "phone": emp_doc["phone"],
+            "dob": emp_doc.get("dob", ""),
+            "blood_group": emp_doc.get("blood_group", ""),
+            "emergency_contact": emp_doc.get("emergency_contact", ""),
+            "address": emp_doc.get("address", ""),
+            "aadhar_card": emp_doc.get("aadhar_card", ""),
+            "designation": emp_doc.get("designation", ""),
+            "department": emp_doc.get("department", ""),
+            "joining_date": emp_doc.get("joining_date", ""),
+            "release_date": emp_doc.get("release_date", ""),
+            "status": status,
+            "created_at": emp_doc["created_at"].isoformat(),
+            "total_sessions": total_sessions,
+            "total_leaves": total_leaves
+        }
+        employee_list.append(employee_data)
+    
+    return employee_list
+
+@api_router.post("/admin/create-employee")
+async def create_employee(emp_data: EmployeeCreate, current_admin: User = Depends(get_current_admin)):
+    """Create a new employee"""
+    # Check if employee exists
+    existing_user = await db.users.find_one({
+        "$or": [{"email": emp_data.email}, {"phone": emp_data.phone}]
+    })
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Employee with this email or phone already exists")
+    
+    # Calculate status based on release_date
+    status = "Active"
+    if emp_data.release_date and emp_data.release_date.strip():
+        try:
+            release_date = datetime.fromisoformat(emp_data.release_date)
+            if release_date <= datetime.now():
+                status = "Inactive"
+        except:
+            pass
+    
+    # Create employee user
+    employee = User(
+        name=emp_data.name,
+        email=emp_data.email,
+        phone=emp_data.phone,
+        password_hash=hash_password(emp_data.password),
+        role="employee"
+    )
+    
+    # Convert to dict and add additional fields
+    emp_dict = employee.dict()
+    emp_dict.update({
+        "dob": emp_data.dob,
+        "blood_group": emp_data.blood_group,
+        "emergency_contact": emp_data.emergency_contact,
+        "address": emp_data.address,
+        "aadhar_card": emp_data.aadhar_card,
+        "designation": emp_data.designation,
+        "department": emp_data.department,
+        "joining_date": emp_data.joining_date,
+        "release_date": emp_data.release_date,
+        "status": status
+    })
+    
+    await db.users.insert_one(emp_dict)
+    return {"message": "Employee created successfully", "employee_id": employee.id}
+
+@api_router.put("/admin/update-employee/{emp_id}")
+async def update_employee(emp_id: str, emp_data: EmployeeUpdate, current_admin: User = Depends(get_current_admin)):
+    """Update employee details"""
+    # Check if employee exists
+    existing_emp = await db.users.find_one({"id": emp_id, "role": "employee"})
+    if not existing_emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Check if email/phone is already taken by another user
+    email_check = await db.users.find_one({"email": emp_data.email, "id": {"$ne": emp_id}})
+    if email_check:
+        raise HTTPException(status_code=400, detail="Email already exists")
+        
+    phone_check = await db.users.find_one({"phone": emp_data.phone, "id": {"$ne": emp_id}})
+    if phone_check:
+        raise HTTPException(status_code=400, detail="Phone number already exists")
+    
+    # Calculate status based on release_date
+    status = "Active"
+    if emp_data.release_date and emp_data.release_date.strip():
+        try:
+            release_date = datetime.fromisoformat(emp_data.release_date)
+            if release_date <= datetime.now():
+                status = "Inactive"
+        except:
+            pass
+    
+    # Update employee
+    update_data = {
+        "name": emp_data.name,
+        "email": emp_data.email,
+        "phone": emp_data.phone,
+        "dob": emp_data.dob,
+        "blood_group": emp_data.blood_group,
+        "emergency_contact": emp_data.emergency_contact,
+        "address": emp_data.address,
+        "aadhar_card": emp_data.aadhar_card,
+        "designation": emp_data.designation,
+        "department": emp_data.department,
+        "joining_date": emp_data.joining_date,
+        "release_date": emp_data.release_date,
+        "status": status
+    }
+    
+    await db.users.update_one({"id": emp_id}, {"$set": update_data})
+    return {"message": "Employee updated successfully"}
+
+@api_router.delete("/admin/delete-employee/{emp_id}")
+async def delete_employee(emp_id: str, current_admin: User = Depends(get_current_admin)):
+    """Delete employee"""
+    # Check if employee exists
+    existing_emp = await db.users.find_one({"id": emp_id, "role": "employee"})
+    if not existing_emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Delete employee and related data
+    await db.users.delete_one({"id": emp_id})
+    await db.sessions.delete_many({"user_id": emp_id})
+    await db.leaves.delete_many({"user_id": emp_id})
+    
+    return {"message": "Employee deleted successfully"}
+
 class ManagerAssignment(BaseModel):
     manager_id: str
     employee_ids: List[str]
