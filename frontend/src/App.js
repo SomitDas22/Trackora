@@ -1685,6 +1685,168 @@ const AdminDashboard = ({ admin, onLogout }) => {
         </div>
       )}
 
+      {/* Manager Assignment Page */}
+      {showManagerAssignmentPage && (
+        <div className="fixed inset-0 bg-slate-800 z-50 overflow-y-auto">
+          <div className="max-w-7xl mx-auto p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Manager Assignments & Organization Tree</h2>
+                <p className="text-slate-300">Manage departments, assign managers, create projects, and view organizational structure</p>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => setShowCreateDepartmentModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  data-testid="create-department-btn"
+                >
+                  Add Department
+                </Button>
+                <Button
+                  onClick={() => setShowCreateManagerModal(true)}
+                  className="bg-green-600 hover:bg-green-700"
+                  data-testid="create-manager-btn"
+                >
+                  Assign Manager
+                </Button>
+                <Button
+                  onClick={() => setShowCreateProjectModal(true)}
+                  className="bg-purple-600 hover:bg-purple-700"
+                  data-testid="create-project-btn"
+                >
+                  Create Project
+                </Button>
+                <Button
+                  onClick={() => setShowManagerAssignmentPage(false)}
+                  variant="outline"
+                  className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  data-testid="close-manager-page"
+                >
+                  ← Back to Dashboard
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Tree View */}
+              <div className="lg:col-span-2">
+                <Card className="bg-slate-700 border-slate-600">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded"></div>
+                      Organization Tree Map
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {organizationTree && organizationTree.tree.length > 0 ? (
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {organizationTree.tree.map((department) => (
+                          <TreeNode key={department.id} node={department} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-slate-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+                          <UserCheck className="h-8 w-8 text-slate-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-slate-300 mb-2">No Organization Structure</h3>
+                        <p className="text-slate-400">Create departments and assign managers to build your organization tree</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Summary Cards */}
+              <div className="space-y-4">
+                {/* Summary Stats */}
+                {organizationTree && (
+                  <Card className="bg-slate-700 border-slate-600">
+                    <CardHeader>
+                      <CardTitle className="text-white">Organization Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-300">Departments</span>
+                        <Badge className="bg-blue-600 text-blue-100">{organizationTree.summary.departments}</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-300">Managers</span>
+                        <Badge className="bg-green-600 text-green-100">{organizationTree.summary.managers}</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-300">Projects</span>
+                        <Badge className="bg-purple-600 text-purple-100">{organizationTree.summary.projects}</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-300">Employees</span>
+                        <Badge className="bg-orange-600 text-orange-100">{organizationTree.summary.employees}</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Quick Actions */}
+                <Card className="bg-slate-700 border-slate-600">
+                  <CardHeader>
+                    <CardTitle className="text-white">Quick Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Button
+                      onClick={() => setShowCreateDepartmentModal(true)}
+                      variant="outline"
+                      className="w-full border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+                    >
+                      Add Department
+                    </Button>
+                    <Button
+                      onClick={() => setShowCreateManagerModal(true)}
+                      variant="outline"
+                      className="w-full border-green-500 text-green-400 hover:bg-green-500 hover:text-white"
+                    >
+                      Assign Manager
+                    </Button>
+                    <Button
+                      onClick={() => setShowCreateProjectModal(true)}
+                      variant="outline"
+                      className="w-full border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white"
+                    >
+                      Create Project
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Legend */}
+                <Card className="bg-slate-700 border-slate-600">
+                  <CardHeader>
+                    <CardTitle className="text-white">Legend</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                      <span className="text-slate-300 text-sm">Department</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-green-500 rounded"></div>
+                      <span className="text-slate-300 text-sm">Manager</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-purple-500 rounded"></div>
+                      <span className="text-slate-300 text-sm">Project</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-orange-500 rounded"></div>
+                      <span className="text-slate-300 text-sm">Employee</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Create Admin Modal */}
       <Dialog open={showCreateAdminModal} onOpenChange={setShowCreateAdminModal}>
         <DialogContent className="max-w-md">
