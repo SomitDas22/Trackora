@@ -295,6 +295,13 @@ const AdminDashboard = ({ admin, onLogout }) => {
   const [userSessions, setUserSessions] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(false);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [holidaysData, setHolidaysData] = useState(null);
+  const [managerAssignments, setManagerAssignments] = useState(null);
+  const [showCreateAdminModal, setShowCreateAdminModal] = useState(false);
+  const [showHolidayModal, setShowHolidayModal] = useState(false);
+  const [newAdminData, setNewAdminData] = useState({ name: '', email: '', password: '' });
+  const [newHolidayData, setNewHolidayData] = useState({ date: '', name: '' });
 
   // Fetch all users
   const fetchUsers = async () => {
