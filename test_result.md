@@ -107,87 +107,108 @@ user_problem_statement: Add 4 new cards to Employee Dashboard (Associated Projec
 backend:
   - task: "Employee Projects API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added GET /employee/projects endpoint to fetch employee's assigned projects with project details and manager names"
+        - working: true
+          agent: "testing"
+          comment: "API working correctly. Returns empty list when no projects assigned. Endpoint accessible with employee authentication."
 
   - task: "Leave Balance API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added GET /employee/leave-balance endpoint with quarterly calculation logic for 3 leave types"
+        - working: true
+          agent: "testing"
+          comment: "API working correctly. Quarterly calculation logic verified - Q3 shows 9 casual, 9 sick, 21 LWP allocated. Response structure includes allocated/used/available for all 3 leave types."
 
   - task: "Apply Leave API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added POST /employee/apply-leave endpoint with balance validation and manager assignment"
+        - working: true
+          agent: "testing"
+          comment: "API working correctly. Successfully creates leave applications and validates excessive leave days. Minor: Leave type validation could be stricter but core functionality works."
 
   - task: "Leave Requests Management API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added GET /employee/leave-requests and manager approval endpoints for leave workflow"
+        - working: true
+          agent: "testing"
+          comment: "API working correctly. Employee can view their leave requests with proper status tracking. Returns formatted list with all required fields."
 
   - task: "Manager Leave Approval API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added GET /manager/leave-requests and PUT /manager/leave-requests/{id} for approval workflow"
+        - working: true
+          agent: "testing"
+          comment: "API working correctly. GET returns pending requests for manager approval, PUT handles approval/rejection with proper error handling for non-existent requests."
 
   - task: "IT Tickets API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added POST /employee/it-tickets and GET /employee/it-tickets endpoints for 6 IT categories"
+        - working: true
+          agent: "testing"
+          comment: "API working correctly. All 6 IT categories tested successfully: Hardware Issues, Software Issues, Network/Connectivity, Account/Access, Security, General Support. Both creation and listing endpoints functional."
 
   - task: "Admin Leave Settings API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added GET/PUT /admin/leave-settings endpoints for quarterly leave allocation configuration"
+        - working: true
+          agent: "testing"
+          comment: "API working correctly. GET returns current settings, PUT updates settings successfully with verification. Admin authentication properly enforced."
 
 frontend:
   - task: "Dashboard Cards UI"
