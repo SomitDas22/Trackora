@@ -3931,6 +3931,10 @@ const Dashboard = ({ user, onLogout, orgBranding }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState('dashboard');
   const [canStartToday, setCanStartToday] = useState(null);
+  const [isManager, setIsManager] = useState(false);
+  const [managerInfo, setManagerInfo] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Fetch active session
   const fetchActiveSession = async () => {
