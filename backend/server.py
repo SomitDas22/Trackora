@@ -199,6 +199,33 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 # Session routes
+@api_router.get("/sessions/can-start-today")
+async def can_start_session_today(current_user: User = Depends(get_current_user)):
+    """Check if user can start a new session today"""
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    # Check if user has any session for today
+    existing_session = await db.sessions.find_one({
+        "user_id": current_user.id,
+        "start_time": {"$gte": today_start, "$lte": today_end}
+    })
+    
+    if existing_session:
+        return {
+            "can_start": False,
+            "reason": "Already logged in today" if existing_session.get("end_time") else "Active session exists",
+            "session_date": existing_session["start_time"].date().isoformat(),
+            "session_time": existing_session["start_time"].strftime("%H:%M:%S"),
+            "is_completed": existing_session.get("end_time") is not None
+        }
+    
+    return {
+        "can_start": True,
+        "reason": "No session found for today"
+    }
+
 @api_router.post("/sessions/start", response_model=WorkSession)
 async def start_session(current_user: User = Depends(get_current_user)):
     now = datetime.now(timezone.utc)
