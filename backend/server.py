@@ -651,6 +651,20 @@ async def startup_db():
     await db.users.create_index([("phone", ASCENDING)], unique=True)
     await db.sessions.create_index([("user_id", ASCENDING)])
     await db.breaks.create_index([("session_id", ASCENDING)])
+    
+    # Seed some sample holidays
+    existing_holidays = await db.holidays.count_documents({})
+    if existing_holidays == 0:
+        sample_holidays = [
+            {"id": str(uuid.uuid4()), "date": "2025-01-01", "name": "New Year's Day"},
+            {"id": str(uuid.uuid4()), "date": "2025-01-26", "name": "Republic Day"},
+            {"id": str(uuid.uuid4()), "date": "2025-03-14", "name": "Holi"},
+            {"id": str(uuid.uuid4()), "date": "2025-08-15", "name": "Independence Day"},
+            {"id": str(uuid.uuid4()), "date": "2025-10-02", "name": "Gandhi Jayanti"},
+            {"id": str(uuid.uuid4()), "date": "2025-11-01", "name": "Diwali"},
+            {"id": str(uuid.uuid4()), "date": "2025-12-25", "name": "Christmas Day"}
+        ]
+        await db.holidays.insert_many(sample_holidays)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
