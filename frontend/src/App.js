@@ -384,6 +384,337 @@ const AdminLoginPage = ({ onAdminLogin, orgBranding }) => {
   );
 };
 
+// Manager/Admin Dashboard Cards
+const EmployeeLeaveRequestsCard = () => {
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const fetchLeaveRequests = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API}/manager/leave-requests`);
+      setLeaveRequests(response.data);
+    } catch (err) {
+      console.error('Error fetching leave requests:', err);
+      setLeaveRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveReject = async (requestId, status, reason = '') => {
+    try {
+      await axios.put(`${API}/manager/leave-requests/${requestId}`, {
+        status: status,
+        manager_reason: reason
+      });
+      alert(`Leave request ${status} successfully!`);
+      fetchLeaveRequests(); // Refresh the list
+    } catch (err) {
+      alert(err.response?.data?.detail || `Failed to ${status} leave request`);
+    }
+  };
+
+  const ApprovalDialog = ({ request, onClose }) => {
+    const [reason, setReason] = useState('');
+    const [action, setAction] = useState('');
+
+    const handleSubmit = () => {
+      if (action === 'rejected' && !reason.trim()) {
+        alert('Please provide a reason for rejection');
+        return;
+      }
+      handleApproveReject(request.id, action, reason);
+      onClose();
+    };
+
+    return (
+      <Dialog open={true} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Process Leave Request</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div><strong>Employee:</strong> {request.employee_name}</div>
+              <div><strong>Type:</strong> {request.leave_type}</div>
+              <div><strong>Duration:</strong> {request.start_date} to {request.end_date} ({request.days_count} days)</div>
+              <div><strong>Reason:</strong> {request.reason}</div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="reason">Manager Comment (Required for rejection)</Label>
+                <Textarea
+                  id="reason"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Provide feedback or reason for decision"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={() => { setAction('approved'); handleSubmit(); }}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  Approve
+                </Button>
+                <Button 
+                  onClick={() => { setAction('rejected'); handleSubmit(); }}
+                  variant="outline"
+                  className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                >
+                  Reject
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const [selectedRequest, setSelectedRequest] = useState(null);
+
+  return (
+    <>
+      <Card 
+        className="hover:shadow-lg transition-shadow cursor-pointer hover:bg-gray-50"
+        onClick={() => { fetchLeaveRequests(); setShowModal(true); }}
+      >
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Employee Leave Requests</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-bold text-orange-600">⏳</span>
+              <UserCheck className="h-6 w-6 text-slate-500" />
+            </div>
+            <div className="text-sm text-gray-600">
+              Pending approval requests
+            </div>
+            <div className="text-xs text-blue-600 font-medium pt-1">
+              Click to review →
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Employee Leave Requests</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-96 overflow-y-auto space-y-3">
+            {loading ? (
+              <p>Loading leave requests...</p>
+            ) : leaveRequests.length > 0 ? (
+              leaveRequests.map(request => (
+                <Card key={request.id} className="border">
+                  <CardContent className="pt-4">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-2 flex-1">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <div className="font-medium text-lg">{request.employee_name}</div>
+                            <div className="text-sm text-gray-600">{request.leave_type}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium">Duration</div>
+                            <div className="text-sm text-gray-600">
+                              {request.start_date} to {request.end_date}
+                            </div>
+                            <div className="text-sm text-gray-600">({request.days_count} days)</div>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium">Reason</div>
+                          <div className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                            {request.reason}
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Applied: {new Date(request.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="ml-4 flex flex-col space-y-2">
+                        <Button 
+                          onClick={() => setSelectedRequest(request)}
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          Review
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">No pending leave requests</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {selectedRequest && (
+        <ApprovalDialog 
+          request={selectedRequest} 
+          onClose={() => setSelectedRequest(null)} 
+        />
+      )}
+    </>
+  );
+};
+
+const LeaveSettingsCard = () => {
+  const [settings, setSettings] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    casual_leave_quarterly: 2,
+    sick_leave_quarterly: 2,
+    leave_without_pay_quarterly: 5
+  });
+
+  const fetchSettings = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/leave-settings`);
+      setSettings(response.data);
+      setFormData(response.data);
+    } catch (err) {
+      console.error('Error fetching leave settings:', err);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      await axios.put(`${API}/admin/leave-settings`, formData);
+      alert('Leave settings updated successfully!');
+      setSettings(formData);
+      setShowModal(false);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to update leave settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  return (
+    <>
+      <Card 
+        className="hover:shadow-lg transition-shadow cursor-pointer hover:bg-gray-50"
+        onClick={() => setShowModal(true)}
+      >
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Leave Settings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-bold text-purple-600">📋</span>
+              <Calendar className="h-6 w-6 text-slate-500" />
+            </div>
+            <div className="text-sm text-gray-600">
+              {settings ? 'Configure quarterly allocations' : 'Loading...'}
+            </div>
+            {settings && (
+              <div className="text-xs text-gray-500 space-y-1">
+                <div>Casual: {settings.casual_leave_quarterly}/quarter</div>
+                <div>Sick: {settings.sick_leave_quarterly}/quarter</div>
+                <div>LWP: {settings.leave_without_pay_quarterly}/quarter</div>
+              </div>
+            )}
+            <div className="text-xs text-blue-600 font-medium pt-1">
+              Click to configure →
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configure Leave Settings</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="casual_leave">Casual Leave (per quarter)</Label>
+                <Input
+                  id="casual_leave"
+                  type="number"
+                  min="0"
+                  value={formData.casual_leave_quarterly}
+                  onChange={(e) => setFormData({...formData, casual_leave_quarterly: parseInt(e.target.value)})}
+                  required
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  Current: {settings?.casual_leave_quarterly || 0} days per quarter
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="sick_leave">Sick Leave (per quarter)</Label>
+                <Input
+                  id="sick_leave"
+                  type="number"
+                  min="0"
+                  value={formData.sick_leave_quarterly}
+                  onChange={(e) => setFormData({...formData, sick_leave_quarterly: parseInt(e.target.value)})}
+                  required
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  Current: {settings?.sick_leave_quarterly || 0} days per quarter
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="lwp">Leave without Pay (per quarter)</Label>
+                <Input
+                  id="lwp"
+                  type="number"
+                  min="0"
+                  value={formData.leave_without_pay_quarterly}
+                  onChange={(e) => setFormData({...formData, leave_without_pay_quarterly: parseInt(e.target.value)})}
+                  required
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  Current: {settings?.leave_without_pay_quarterly || 0} days per quarter
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 p-3 rounded text-sm text-blue-800">
+              <strong>Note:</strong> Changes will affect all employees' quarterly leave allocations from the next calculation cycle.
+            </div>
+
+            <div className="flex space-x-2 pt-4">
+              <Button type="submit" disabled={loading} className="flex-1">
+                {loading ? 'Updating...' : 'Update Settings'}
+              </Button>
+              <Button type="button" onClick={() => setShowModal(false)} variant="outline" className="flex-1">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
 const AdminDashboard = ({ admin, onLogout, orgBranding }) => {
   const [users, setUsers] = useState([]);
   const [adminStats, setAdminStats] = useState(null);
