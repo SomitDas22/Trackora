@@ -494,8 +494,8 @@ async def get_calendar_month(
             day_type = "holiday"
         
         # Check if user worked
-        elif any(datetime.fromisoformat(s["start_time"]).date().isoformat() == date_str for s in sessions):
-            session = next(s for s in sessions if datetime.fromisoformat(s["start_time"]).date().isoformat() == date_str)
+        elif any(s["start_time"].date().isoformat() == date_str for s in sessions):
+            session = next(s for s in sessions if s["start_time"].date().isoformat() == date_str)
             day_type = "half-day" if session.get("is_half_day") else "worked"
         
         # Check if user was on leave
