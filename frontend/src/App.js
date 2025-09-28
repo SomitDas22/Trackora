@@ -318,6 +318,7 @@ const Dashboard = ({ user, onLogout }) => {
       await fetchSessionHistory();
       await fetchCalendarData();
       await fetchDashboardStats();
+      await checkCanStartToday();
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to apply half day');
     } finally {
@@ -342,6 +343,7 @@ const Dashboard = ({ user, onLogout }) => {
       await fetchSessionHistory();
       await fetchCalendarData();
       await fetchDashboardStats();
+      await checkCanStartToday();
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to end session');
     } finally {
