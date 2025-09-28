@@ -363,7 +363,6 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Manager Status & Notifications API"
     - "Manager Dashboard & Notifications UI"
     - "Logo Upload UI"
   stuck_tasks: []
