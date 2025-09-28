@@ -467,6 +467,10 @@ const AdminDashboard = ({ admin, onLogout }) => {
     fetchManagerAssignments();
     fetchUsersOnLeave();
     fetchEmployees();
+    fetchOrganizationTree();
+    fetchDepartments();
+    fetchManagers();
+    fetchProjects();
   }, []);
 
   const handleLogout = () => {
