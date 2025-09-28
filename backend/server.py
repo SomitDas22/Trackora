@@ -718,17 +718,28 @@ async def get_holidays_management(current_admin: User = Depends(get_current_admi
         "holidays": holidays
     }
 
+class HolidayCreate(BaseModel):
+    name: str
+    date: str
+    type: str = "Mandatory"  # Mandatory or Optional
+
+class HolidayUpdate(BaseModel):
+    name: str
+    date: str
+    type: str
+
 @api_router.post("/admin/add-holiday")
-async def add_holiday(holiday_data: dict, current_admin: User = Depends(get_current_admin)):
+async def add_holiday(holiday_data: HolidayCreate, current_admin: User = Depends(get_current_admin)):
     """Add a new holiday"""
     new_holiday = {
         "id": str(uuid.uuid4()),
-        "date": holiday_data["date"],
-        "name": holiday_data["name"]
+        "date": holiday_data.date,
+        "name": holiday_data.name,
+        "type": holiday_data.type
     }
     
     # Check if holiday already exists for this date
-    existing = await db.holidays.find_one({"date": holiday_data["date"]})
+    existing = await db.holidays.find_one({"date": holiday_data.date})
     if existing:
         raise HTTPException(status_code=400, detail="Holiday already exists for this date")
     
