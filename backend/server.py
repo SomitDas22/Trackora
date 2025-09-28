@@ -1742,13 +1742,13 @@ async def startup_db():
     existing_holidays = await db.holidays.count_documents({})
     if existing_holidays == 0:
         sample_holidays = [
-            {"id": str(uuid.uuid4()), "date": "2025-01-01", "name": "New Year's Day"},
-            {"id": str(uuid.uuid4()), "date": "2025-01-26", "name": "Republic Day"},
-            {"id": str(uuid.uuid4()), "date": "2025-03-14", "name": "Holi"},
-            {"id": str(uuid.uuid4()), "date": "2025-08-15", "name": "Independence Day"},
-            {"id": str(uuid.uuid4()), "date": "2025-10-02", "name": "Gandhi Jayanti"},
-            {"id": str(uuid.uuid4()), "date": "2025-11-01", "name": "Diwali"},
-            {"id": str(uuid.uuid4()), "date": "2025-12-25", "name": "Christmas Day"}
+            {"id": str(uuid.uuid4()), "date": "2025-01-01", "name": "New Year's Day", "type": "Mandatory"},
+            {"id": str(uuid.uuid4()), "date": "2025-01-26", "name": "Republic Day", "type": "Mandatory"},
+            {"id": str(uuid.uuid4()), "date": "2025-03-14", "name": "Holi", "type": "Mandatory"},
+            {"id": str(uuid.uuid4()), "date": "2025-08-15", "name": "Independence Day", "type": "Mandatory"},
+            {"id": str(uuid.uuid4()), "date": "2025-10-02", "name": "Gandhi Jayanti", "type": "Mandatory"},
+            {"id": str(uuid.uuid4()), "date": "2025-11-01", "name": "Diwali", "type": "Mandatory"},
+            {"id": str(uuid.uuid4()), "date": "2025-12-25", "name": "Christmas Day", "type": "Mandatory"}
         ]
         await db.holidays.insert_many(sample_holidays)
     
