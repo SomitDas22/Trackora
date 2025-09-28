@@ -186,6 +186,84 @@ const formatTime = (seconds) => {
   return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
+// Tree Node Component
+const TreeNode = ({ node, level = 0 }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+  
+  const getIcon = () => {
+    switch (node.type) {
+      case 'department':
+        return <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold">D</div>;
+      case 'manager':
+        return <div className="w-6 h-6 bg-green-500 rounded flex items-center justify-center text-white text-xs font-bold">M</div>;
+      case 'project':
+        return <div className="w-6 h-6 bg-purple-500 rounded flex items-center justify-center text-white text-xs font-bold">P</div>;
+      case 'employee':
+        return <div className="w-6 h-6 bg-orange-500 rounded flex items-center justify-center text-white text-xs font-bold">E</div>;
+      default:
+        return <div className="w-6 h-6 bg-gray-500 rounded flex items-center justify-center text-white text-xs font-bold">?</div>;
+    }
+  };
+
+  const getBadgeColor = () => {
+    switch (node.type) {
+      case 'department': return 'bg-blue-100 text-blue-800';
+      case 'manager': return 'bg-green-100 text-green-800';
+      case 'project': return 'bg-purple-100 text-purple-800';
+      case 'employee': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="ml-4" style={{ marginLeft: `${level * 20}px` }}>
+      <div className="flex items-center space-x-2 p-2 hover:bg-slate-600 rounded cursor-pointer">
+        {node.children && node.children.length > 0 && (
+          <button onClick={() => setIsExpanded(!isExpanded)} className="text-slate-300">
+            {isExpanded ? '▼' : '▶'}
+          </button>
+        )}
+        {getIcon()}
+        <div className="flex-1">
+          <div className="flex items-center space-x-2">
+            <span className="text-white font-medium">{node.name}</span>
+            <Badge className={`text-xs ${getBadgeColor()}`}>
+              {node.type}
+            </Badge>
+            {node.status && node.status !== 'Active' && (
+              <Badge className="text-xs bg-red-100 text-red-800">{node.status}</Badge>
+            )}
+          </div>
+          {node.email && (
+            <div className="text-slate-400 text-sm">{node.email}</div>
+          )}
+          {node.description && (
+            <div className="text-slate-400 text-sm">{node.description}</div>
+          )}
+          {node.designation && (
+            <div className="text-slate-400 text-sm">{node.designation}</div>
+          )}
+          {(node.start_date || node.end_date) && (
+            <div className="text-slate-400 text-sm">
+              {node.start_date && `Start: ${new Date(node.start_date).toLocaleDateString()}`}
+              {node.start_date && node.end_date && ' | '}
+              {node.end_date && `End: ${new Date(node.end_date).toLocaleDateString()}`}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {isExpanded && node.children && node.children.length > 0 && (
+        <div className="ml-4">
+          {node.children.map((child) => (
+            <TreeNode key={child.id} node={child} level={level + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AdminLoginPage = ({ onAdminLogin }) => {
   const [formData, setFormData] = useState({
     email: '',
