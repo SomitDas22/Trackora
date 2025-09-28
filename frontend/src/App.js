@@ -1381,13 +1381,33 @@ const Dashboard = ({ user, onLogout }) => {
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check for regular user token
     const token = localStorage.getItem('token');
-    if (token) {
+    const adminToken = localStorage.getItem('adminToken');
+    
+    if (adminToken) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${adminToken}`;
+      // Verify admin token
+      axios.get(`${API}/admin/auth/me`)
+        .then(response => {
+          setAdmin(response.data);
+          setIsAdminAuthenticated(true);
+        })
+        .catch(() => {
+          localStorage.removeItem('adminToken');
+          delete axios.defaults.headers.common['Authorization'];
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      // Verify token
+      // Verify user token
       axios.get(`${API}/auth/me`)
         .then(response => {
           setUser(response.data);
@@ -1415,6 +1435,16 @@ function App() {
     setIsAuthenticated(false);
   };
 
+  const handleAdminLogin = (adminData) => {
+    setAdmin(adminData);
+    setIsAdminAuthenticated(true);
+  };
+
+  const handleAdminLogout = () => {
+    setAdmin(null);
+    setIsAdminAuthenticated(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -1435,6 +1465,22 @@ function App() {
             isAuthenticated && user ? 
               <Dashboard user={user} onLogout={handleLogout} /> :
               <AuthPage onLogin={handleLogin} />
+          } 
+        />
+        <Route 
+          path="/admin-login" 
+          element={
+            isAdminAuthenticated && admin ?
+              <AdminDashboard admin={admin} onLogout={handleAdminLogout} /> :
+              <AdminLoginPage onAdminLogin={handleAdminLogin} />
+          } 
+        />
+        <Route 
+          path="/admin" 
+          element={
+            isAdminAuthenticated && admin ?
+              <AdminDashboard admin={admin} onLogout={handleAdminLogout} /> :
+              <Navigate to="/admin-login" />
           } 
         />
       </Routes>
