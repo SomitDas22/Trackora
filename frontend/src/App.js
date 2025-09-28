@@ -3915,6 +3915,281 @@ const RaiseITTicketCard = () => {
   );
 };
 
+// Manager Section Component for Employee Dashboard
+const ManagerLeaveRequestsSection = () => {
+  const [managerRequests, setManagerRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+
+  const fetchManagerRequests = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API}/manager/leave-requests`);
+      setManagerRequests(response.data);
+    } catch (err) {
+      console.error('Error fetching manager requests:', err);
+      setManagerRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveReject = async (requestId, status, reason = '') => {
+    try {
+      await axios.put(`${API}/manager/leave-requests/${requestId}`, {
+        status: status,
+        manager_reason: reason
+      });
+      alert(`Leave request ${status} successfully!`);
+      fetchManagerRequests(); // Refresh the list
+    } catch (err) {
+      alert(err.response?.data?.detail || `Failed to ${status} leave request`);
+    }
+  };
+
+  const ApprovalDialog = ({ request, onClose }) => {
+    const [reason, setReason] = useState('');
+    const [action, setAction] = useState('');
+
+    const handleSubmit = () => {
+      if (action === 'rejected' && !reason.trim()) {
+        alert('Please provide a reason for rejection');
+        return;
+      }
+      handleApproveReject(request.id, action, reason);
+      onClose();
+    };
+
+    return (
+      <Dialog open={true} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Process Leave Request</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div><strong>Employee:</strong> {request.employee_name}</div>
+              <div><strong>Type:</strong> {request.leave_type}</div>
+              <div><strong>Duration:</strong> {request.start_date} to {request.end_date} ({request.days_count} days)</div>
+              <div><strong>Reason:</strong> {request.reason}</div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="reason">Manager Comment (Required for rejection)</Label>
+                <Textarea
+                  id="reason"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Provide feedback or reason for decision"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={() => { setAction('approved'); handleSubmit(); }}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  Approve
+                </Button>
+                <Button 
+                  onClick={() => { setAction('rejected'); handleSubmit(); }}
+                  variant="outline"
+                  className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                >
+                  Reject
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  useEffect(() => {
+    fetchManagerRequests();
+  }, []);
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <UserCheck className="h-6 w-6 text-orange-600" />
+            Employee Leave Requests
+            {managerRequests.length > 0 && (
+              <Badge className="bg-orange-100 text-orange-800">
+                {managerRequests.length} Pending
+              </Badge>
+            )}
+          </CardTitle>
+          <p className="text-gray-600">Review and approve leave requests from your team</p>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p>Loading requests...</p>
+          ) : managerRequests.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Employee</TableHead>
+                    <TableHead>Leave Type</TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead>Days</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead>Applied</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {managerRequests.map((request) => (
+                    <TableRow key={request.id}>
+                      <TableCell className="font-medium">
+                        {request.employee_name}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {request.leave_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div>{request.start_date}</div>
+                          <div className="text-gray-500">to {request.end_date}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className="bg-blue-100 text-blue-800">
+                          {request.days_count} days
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs truncate" title={request.reason}>
+                          {request.reason}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-500">
+                        {new Date(request.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          onClick={() => setSelectedRequest(request)}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          Review
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <UserCheck className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>No pending leave requests</p>
+              <p className="text-sm">All caught up! 🎉</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {selectedRequest && (
+        <ApprovalDialog 
+          request={selectedRequest} 
+          onClose={() => setSelectedRequest(null)} 
+        />
+      )}
+    </>
+  );
+};
+
+// Notifications Component
+const NotificationsSection = ({ notifications, unreadCount, onMarkRead }) => {
+  const [showModal, setShowModal] = useState(false);
+
+  return (
+    <>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowModal(true)}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-blue-600" />
+              Notifications
+            </div>
+            {unreadCount > 0 && (
+              <Badge className="bg-red-500 text-white">
+                {unreadCount}
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="text-2xl font-bold text-blue-600">
+              {notifications.length}
+            </div>
+            <p className="text-sm text-gray-600">
+              {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up!'}
+            </p>
+            <Badge variant="outline" className="border-blue-200 text-blue-700">
+              Click to view
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Notifications</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-96 overflow-y-auto space-y-3">
+            {notifications.length > 0 ? (
+              notifications.map(notification => (
+                <Card key={notification.id} className={`border ${notification.status === 'unread' ? 'bg-blue-50 border-blue-200' : ''}`}>
+                  <CardContent className="pt-4">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{notification.title}</h4>
+                          {notification.status === 'unread' && (
+                            <Badge className="bg-blue-500 text-white text-xs">New</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700">{notification.message}</p>
+                        <div className="text-xs text-gray-500">
+                          {new Date(notification.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                      {notification.status === 'unread' && (
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onMarkRead(notification.id)}
+                          className="text-xs"
+                        >
+                          Mark Read
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">No notifications yet</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
 const Dashboard = ({ user, onLogout, orgBranding }) => {
   const [activeSession, setActiveSession] = useState(null);
   const [loading, setLoading] = useState(false);
