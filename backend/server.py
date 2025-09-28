@@ -2091,6 +2091,108 @@ async def update_leave_settings(settings: LeaveSettings, current_admin: User = D
         print(f"Error updating leave settings: {e}")
         raise HTTPException(status_code=500, detail="Failed to update leave settings")
 
+# Logo Upload APIs
+@api_router.post("/admin/upload-logo")
+async def upload_logo(current_admin: User = Depends(get_current_admin)):
+    """Upload company logo - expects form data with file"""
+    from fastapi import File, UploadFile
+    return {"message": "This endpoint will be updated to handle file uploads"}
+
+@api_router.post("/admin/upload-logo-base64")
+async def upload_logo_base64(
+    logo_data: dict,
+    current_admin: User = Depends(get_current_admin)
+):
+    """Upload company logo as base64"""
+    try:
+        import base64
+        import re
+        
+        # Validate base64 image data
+        if not logo_data.get('logo_base64'):
+            raise HTTPException(status_code=400, detail="No logo data provided")
+        
+        logo_base64 = logo_data['logo_base64']
+        
+        # Check if it's a data URL and extract the base64 part
+        if logo_base64.startswith('data:image'):
+            # Extract base64 from data URL (data:image/png;base64,...)
+            try:
+                header, data = logo_base64.split(',', 1)
+                logo_base64 = data
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid data URL format")
+        
+        # Validate base64 format
+        try:
+            base64.b64decode(logo_base64)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid base64 format")
+        
+        # Check file size (limit to 5MB)
+        decoded_size = len(base64.b64decode(logo_base64))
+        max_size = 5 * 1024 * 1024  # 5MB
+        if decoded_size > max_size:
+            raise HTTPException(status_code=400, detail="File size too large. Maximum 5MB allowed")
+        
+        # Update organization settings with the logo
+        full_data_url = logo_data['logo_base64'] if logo_data['logo_base64'].startswith('data:image') else f"data:image/png;base64,{logo_base64}"
+        
+        # Find existing settings
+        existing_settings = await db.organization_settings.find_one({})
+        
+        if existing_settings:
+            # Update existing
+            await db.organization_settings.update_one(
+                {"_id": existing_settings["_id"]},
+                {"$set": {"company_logo": full_data_url}}
+            )
+        else:
+            # Create new with logo
+            new_settings = {
+                "id": str(uuid.uuid4()),
+                "company_logo": full_data_url,
+                "company_name": "Your Company",
+                "establishment_date": "",
+                "company_email": "",
+                "founder_name": "",
+                "founder_email": "",
+                "address": "",
+                "phone": "",
+                "website": ""
+            }
+            await db.organization_settings.insert_one(new_settings)
+        
+        return {"message": "Logo uploaded successfully", "logo_url": full_data_url}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error uploading logo: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload logo")
+
+@api_router.delete("/admin/remove-logo")
+async def remove_logo(current_admin: User = Depends(get_current_admin)):
+    """Remove company logo"""
+    try:
+        # Find existing settings and remove logo
+        existing_settings = await db.organization_settings.find_one({})
+        
+        if existing_settings:
+            await db.organization_settings.update_one(
+                {"_id": existing_settings["_id"]},
+                {"$set": {"company_logo": ""}}
+            )
+            return {"message": "Logo removed successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="No organization settings found")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error removing logo: {e}")
+        raise HTTPException(status_code=500, detail="Failed to remove logo")
+
 # Include the router in the main app
 app.include_router(api_router)
 
