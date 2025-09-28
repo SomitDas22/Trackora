@@ -227,15 +227,18 @@ backend:
 
   - task: "Manager Status & Notifications API"
     implemented: true
-    working: "NA"
+    working: false
     file: "/app/backend/server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added GET /employee/manager-status to check if user is a manager, notification APIs (GET /employee/notifications, PUT /employee/notifications/{id}/read, GET /employee/notifications/unread-count), and automatic notification creation when leave requests are approved/rejected"
+        - working: false
+          agent: "testing"
+          comment: "CRITICAL ISSUE: Manager Status API works correctly (✅), Notification APIs work correctly (✅), but Leave Approval Workflow is BROKEN (❌). Root cause: apply-leave API cannot assign manager_id because there's no system to assign employees to departments. The API looks for employee's department in db.employees collection (which doesn't exist) and tries to get manager_id from department, but employees are never assigned to departments. Result: manager_id is always None, managers never see leave requests, no notifications are created. Need to implement employee-to-department assignment system or fix manager assignment logic in apply-leave API."
 
 frontend:
   - task: "Dashboard Cards UI"
