@@ -642,13 +642,12 @@ async def get_calendar_month(
         }
     }).to_list(length=None)
     
-    # Get mandatory holidays for the month
+    # Get holidays for the month (prioritize mandatory holidays)
     holidays = await db.holidays.find({
         "date": {
             "$gte": first_day.date().isoformat(),
             "$lte": last_day.date().isoformat()
-        },
-        "type": "Mandatory"
+        }
     }).to_list(length=None)
     
     # Build calendar data with priority logic
