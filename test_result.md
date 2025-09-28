@@ -327,7 +327,8 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Logo Upload API"
+    - "Manager Status & Notifications API"
+    - "Manager Dashboard & Notifications UI"
     - "Logo Upload UI"
   stuck_tasks: []
   test_all: false
