@@ -187,6 +187,43 @@ class ITTicket(BaseModel):
     category: str  # Hardware, Software, Network, Account, Other
     priority: str = "Medium"  # Low, Medium, High, Critical
 
+class ITTicketCreate(BaseModel):
+    title: str
+    description: str
+    category: str
+    priority: str = "Medium"
+
+class LeaveApplicationCreate(BaseModel):
+    leave_type: str  # Casual Leave, Sick Leave, Leave without Pay
+    start_date: str
+    end_date: str
+    reason: str
+    days_count: float
+
+class LeaveApprovalRequest(BaseModel):
+    status: str  # approved, rejected
+    manager_reason: str = ""
+
+class LeaveBalance(BaseModel):
+    user_id: str
+    casual_leave: int = 0
+    sick_leave: int = 0
+    leave_without_pay: int = 0
+    used_casual_leave: int = 0
+    used_sick_leave: int = 0
+    used_leave_without_pay: int = 0
+
+class LeaveSettings(BaseModel):
+    casual_leave_quarterly: int = 2
+    sick_leave_quarterly: int = 2
+    leave_without_pay_quarterly: int = 5
+
+class ProjectAssignment(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: str
+    employee_id: str
+    assigned_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # Utility functions
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
