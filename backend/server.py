@@ -1762,6 +1762,335 @@ async def apply_half_day(
     
     return {"message": "Half day applied and session ended successfully"}
 
+# Employee Project APIs
+@api_router.get("/employee/projects")
+async def get_employee_projects(current_user: User = Depends(get_current_user)):
+    """Get projects assigned to the current employee"""
+    try:
+        # Find project assignments for this employee
+        assignments = await db.project_assignments.find({"employee_id": current_user.id}).to_list(length=None)
+        
+        projects = []
+        for assignment in assignments:
+            project = await db.projects.find_one({"id": assignment["project_id"]})
+            if project:
+                # Get manager details
+                manager = await db.users.find_one({"id": project.get("manager_id")})
+                manager_name = manager["name"] if manager else "Not assigned"
+                
+                projects.append({
+                    "id": project["id"],
+                    "name": project["name"],
+                    "description": project.get("description", ""),
+                    "status": project.get("status", "Active"),
+                    "start_date": project.get("start_date", ""),
+                    "end_date": project.get("end_date", ""),
+                    "manager_name": manager_name,
+                    "assigned_at": assignment.get("assigned_at", "").isoformat() if assignment.get("assigned_at") else ""
+                })
+        
+        return projects
+    except Exception as e:
+        print(f"Error fetching employee projects: {e}")
+        return []
+
+# Leave Management APIs
+@api_router.get("/employee/leave-balance")
+async def get_employee_leave_balance(current_user: User = Depends(get_current_user)):
+    """Get current leave balance for employee"""
+    try:
+        # Get leave settings
+        settings = await db.leave_settings.find_one({}) or {}
+        quarterly_casual = settings.get("casual_leave_quarterly", 2)
+        quarterly_sick = settings.get("sick_leave_quarterly", 2) 
+        quarterly_lwp = settings.get("leave_without_pay_quarterly", 5)
+        
+        # Calculate quarterly allocation (current quarter)
+        now = datetime.now(timezone.utc)
+        quarter = (now.month - 1) // 3 + 1
+        
+        # Get used leaves for current year
+        year_start = datetime(now.year, 1, 1, tzinfo=timezone.utc)
+        used_leaves = await db.leaves.find({
+            "user_id": current_user.id,
+            "status": "approved",
+            "created_at": {"$gte": year_start}
+        }).to_list(length=None)
+        
+        used_casual = sum(1 for leave in used_leaves if leave.get("leave_type") == "Casual Leave")
+        used_sick = sum(1 for leave in used_leaves if leave.get("leave_type") == "Sick Leave") 
+        used_lwp = sum(1 for leave in used_leaves if leave.get("leave_type") == "Leave without Pay")
+        
+        # Calculate available balance (quarters completed * quarterly allocation - used)
+        available_casual = max(0, (quarter * quarterly_casual) - used_casual)
+        available_sick = max(0, (quarter * quarterly_sick) - used_sick)
+        available_lwp = max(0, (quarter * quarterly_lwp) - used_lwp)
+        
+        return {
+            "casual_leave": {
+                "allocated": quarter * quarterly_casual,
+                "used": used_casual,
+                "available": available_casual
+            },
+            "sick_leave": {
+                "allocated": quarter * quarterly_sick,
+                "used": used_sick,
+                "available": available_sick
+            },
+            "leave_without_pay": {
+                "allocated": quarter * quarterly_lwp,
+                "used": used_lwp,
+                "available": available_lwp
+            },
+            "quarter": quarter
+        }
+    except Exception as e:
+        print(f"Error fetching leave balance: {e}")
+        return {"error": "Failed to fetch leave balance"}
+
+@api_router.post("/employee/apply-leave")
+async def apply_leave(leave_data: LeaveApplicationCreate, current_user: User = Depends(get_current_user)):
+    """Apply for leave"""
+    try:
+        # Check if user has sufficient leave balance
+        balance = await get_employee_leave_balance(current_user)
+        
+        leave_type_key = {
+            "Casual Leave": "casual_leave",
+            "Sick Leave": "sick_leave", 
+            "Leave without Pay": "leave_without_pay"
+        }.get(leave_data.leave_type)
+        
+        if leave_type_key and balance[leave_type_key]["available"] < leave_data.days_count:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Insufficient {leave_data.leave_type} balance. Available: {balance[leave_type_key]['available']}"
+            )
+        
+        # Find employee's manager
+        employee = await db.employees.find_one({"email": current_user.email})
+        manager_id = None
+        if employee:
+            dept = await db.departments.find_one({"id": employee.get("department_id")})
+            if dept:
+                manager_id = dept.get("manager_id")
+        
+        # Create leave application
+        leave_application = {
+            "id": str(uuid.uuid4()),
+            "user_id": current_user.id,
+            "leave_type": leave_data.leave_type,
+            "start_date": leave_data.start_date,
+            "end_date": leave_data.end_date,
+            "reason": leave_data.reason,
+            "days_count": leave_data.days_count,
+            "status": "pending",
+            "manager_id": manager_id,
+            "created_at": datetime.now(timezone.utc),
+            "manager_reason": ""
+        }
+        
+        await db.leave_applications.insert_one(leave_application)
+        return {"message": "Leave application submitted successfully", "id": leave_application["id"]}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error applying leave: {e}")
+        raise HTTPException(status_code=500, detail="Failed to apply for leave")
+
+@api_router.get("/employee/leave-requests")
+async def get_employee_leave_requests(current_user: User = Depends(get_current_user)):
+    """Get leave requests for current employee"""
+    try:
+        requests = await db.leave_applications.find(
+            {"user_id": current_user.id}, 
+            sort=[("created_at", -1)]
+        ).to_list(length=None)
+        
+        formatted_requests = []
+        for req in requests:
+            formatted_requests.append({
+                "id": req["id"],
+                "leave_type": req["leave_type"],
+                "start_date": req["start_date"],
+                "end_date": req["end_date"],
+                "reason": req["reason"],
+                "days_count": req["days_count"],
+                "status": req["status"],
+                "created_at": req["created_at"].isoformat(),
+                "manager_reason": req.get("manager_reason", "")
+            })
+            
+        return formatted_requests
+    except Exception as e:
+        print(f"Error fetching leave requests: {e}")
+        return []
+
+# Manager Leave Approval APIs
+@api_router.get("/manager/leave-requests")
+async def get_pending_leave_requests(current_user: User = Depends(get_current_user)):
+    """Get pending leave requests for manager approval"""
+    try:
+        # Find pending leave requests where current user is the manager
+        requests = await db.leave_applications.find({
+            "manager_id": current_user.id,
+            "status": "pending"
+        }, sort=[("created_at", -1)]).to_list(length=None)
+        
+        formatted_requests = []
+        for req in requests:
+            # Get employee details
+            employee = await db.users.find_one({"id": req["user_id"]})
+            employee_name = employee["name"] if employee else "Unknown Employee"
+            
+            formatted_requests.append({
+                "id": req["id"],
+                "employee_name": employee_name,
+                "employee_id": req["user_id"],
+                "leave_type": req["leave_type"],
+                "start_date": req["start_date"],
+                "end_date": req["end_date"],
+                "reason": req["reason"],
+                "days_count": req["days_count"],
+                "created_at": req["created_at"].isoformat()
+            })
+            
+        return formatted_requests
+    except Exception as e:
+        print(f"Error fetching manager leave requests: {e}")
+        return []
+
+@api_router.put("/manager/leave-requests/{request_id}")
+async def approve_reject_leave(
+    request_id: str, 
+    approval_data: LeaveApprovalRequest, 
+    current_user: User = Depends(get_current_user)
+):
+    """Approve or reject leave request"""
+    try:
+        # Find the leave request
+        leave_request = await db.leave_applications.find_one({"id": request_id})
+        if not leave_request:
+            raise HTTPException(status_code=404, detail="Leave request not found")
+            
+        # Verify current user is the manager
+        if leave_request.get("manager_id") != current_user.id:
+            raise HTTPException(status_code=403, detail="You are not authorized to approve this request")
+        
+        # Update leave request
+        update_data = {
+            "status": approval_data.status,
+            "manager_reason": approval_data.manager_reason,
+            "approved_at": datetime.now(timezone.utc)
+        }
+        
+        await db.leave_applications.update_one({"id": request_id}, {"$set": update_data})
+        
+        # If approved, create leave record
+        if approval_data.status == "approved":
+            leave_record = {
+                "id": str(uuid.uuid4()),
+                "user_id": leave_request["user_id"],
+                "leave_type": leave_request["leave_type"],
+                "start_date": leave_request["start_date"],
+                "end_date": leave_request["end_date"],
+                "days_count": leave_request["days_count"],
+                "reason": leave_request["reason"],
+                "status": "approved",
+                "created_at": datetime.now(timezone.utc)
+            }
+            await db.leaves.insert_one(leave_record)
+        
+        return {"message": f"Leave request {approval_data.status} successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error processing leave approval: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process leave request")
+
+# IT Ticket APIs
+@api_router.post("/employee/it-tickets")
+async def create_it_ticket(ticket_data: ITTicketCreate, current_user: User = Depends(get_current_user)):
+    """Create new IT support ticket"""
+    try:
+        ticket = {
+            "id": str(uuid.uuid4()),
+            "user_id": current_user.id,
+            "title": ticket_data.title,
+            "description": ticket_data.description,
+            "category": ticket_data.category,
+            "priority": ticket_data.priority,
+            "status": "open",
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
+        }
+        
+        await db.it_tickets.insert_one(ticket)
+        return {"message": "IT ticket created successfully", "id": ticket["id"]}
+        
+    except Exception as e:
+        print(f"Error creating IT ticket: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create IT ticket")
+
+@api_router.get("/employee/it-tickets")
+async def get_employee_tickets(current_user: User = Depends(get_current_user)):
+    """Get IT tickets for current employee"""
+    try:
+        tickets = await db.it_tickets.find(
+            {"user_id": current_user.id}, 
+            sort=[("created_at", -1)]
+        ).to_list(length=None)
+        
+        formatted_tickets = []
+        for ticket in tickets:
+            formatted_tickets.append({
+                "id": ticket["id"],
+                "title": ticket["title"],
+                "description": ticket["description"],
+                "category": ticket["category"],
+                "priority": ticket["priority"],
+                "status": ticket["status"],
+                "created_at": ticket["created_at"].isoformat(),
+                "updated_at": ticket.get("updated_at", ticket["created_at"]).isoformat()
+            })
+            
+        return formatted_tickets
+    except Exception as e:
+        print(f"Error fetching IT tickets: {e}")
+        return []
+
+# Admin Leave Settings APIs
+@api_router.get("/admin/leave-settings")
+async def get_leave_settings(current_admin: User = Depends(get_current_admin)):
+    """Get leave settings"""
+    try:
+        settings = await db.leave_settings.find_one({}) or {}
+        return {
+            "casual_leave_quarterly": settings.get("casual_leave_quarterly", 2),
+            "sick_leave_quarterly": settings.get("sick_leave_quarterly", 2),
+            "leave_without_pay_quarterly": settings.get("leave_without_pay_quarterly", 5)
+        }
+    except Exception as e:
+        print(f"Error fetching leave settings: {e}")
+        return {"error": "Failed to fetch leave settings"}
+
+@api_router.put("/admin/leave-settings")
+async def update_leave_settings(settings: LeaveSettings, current_admin: User = Depends(get_current_admin)):
+    """Update leave settings"""
+    try:
+        # Upsert leave settings
+        await db.leave_settings.replace_one(
+            {}, 
+            settings.dict(),
+            upsert=True
+        )
+        return {"message": "Leave settings updated successfully"}
+    except Exception as e:
+        print(f"Error updating leave settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update leave settings")
+
 # Include the router in the main app
 app.include_router(api_router)
 
