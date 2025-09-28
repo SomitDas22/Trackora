@@ -411,6 +411,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
     fetchHolidaysData();
     fetchManagerAssignments();
     fetchUsersOnLeave();
+    fetchEmployees();
   }, []);
 
   const handleLogout = () => {
