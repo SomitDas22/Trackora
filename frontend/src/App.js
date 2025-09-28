@@ -309,6 +309,16 @@ const AdminDashboard = ({ admin, onLogout }) => {
   const [showHolidayListPage, setShowHolidayListPage] = useState(false);
   const [editingHoliday, setEditingHoliday] = useState(null);
   const [showEditHolidayModal, setShowEditHolidayModal] = useState(false);
+  const [showEmployeePage, setShowEmployeePage] = useState(false);
+  const [employees, setEmployees] = useState([]);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [showEditEmployeeModal, setShowEditEmployeeModal] = useState(false);
+  const [showCreateEmployeeModal, setShowCreateEmployeeModal] = useState(false);
+  const [newEmployeeData, setNewEmployeeData] = useState({
+    name: '', email: '', phone: '', password: '',
+    dob: '', blood_group: '', emergency_contact: '', address: '',
+    aadhar_card: '', designation: '', department: '', joining_date: '', release_date: ''
+  });
 
   // Fetch all users
   const fetchUsers = async () => {
