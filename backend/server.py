@@ -1992,6 +1992,50 @@ async def assign_employee_department(
         print(f"Error assigning employee to department: {e}")
         raise HTTPException(status_code=500, detail="Failed to assign employee to department")
 
+@api_router.post("/admin/bulk-assign-employees")
+async def bulk_assign_employees_to_department(
+    bulk_data: dict,
+    current_admin: User = Depends(get_current_admin)
+):
+    """Bulk assign multiple employees to a department"""
+    try:
+        employee_ids = bulk_data.get("employee_ids", [])
+        department_id = bulk_data.get("department_id")
+        
+        if not employee_ids or not department_id:
+            raise HTTPException(status_code=400, detail="Employee IDs and Department ID are required")
+        
+        # Verify department exists
+        department = await db.departments.find_one({"id": department_id})
+        if not department:
+            raise HTTPException(status_code=404, detail="Department not found")
+        
+        success_count = 0
+        for employee_id in employee_ids:
+            # Verify employee exists
+            employee = await db.users.find_one({"id": employee_id, "role": "employee"})
+            if employee:
+                # Remove existing assignment
+                await db.employee_departments.delete_many({"employee_id": employee_id})
+                
+                # Add new assignment
+                assignment = {
+                    "id": str(uuid.uuid4()),
+                    "employee_id": employee_id,
+                    "department_id": department_id,
+                    "assigned_at": datetime.now(timezone.utc)
+                }
+                await db.employee_departments.insert_one(assignment)
+                success_count += 1
+        
+        return {"message": f"Successfully assigned {success_count} employees to department"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error bulk assigning employees: {e}")
+        raise HTTPException(status_code=500, detail="Failed to assign employees")
+
 @api_router.get("/admin/employee-department-assignments")
 async def get_employee_department_assignments(current_admin: User = Depends(get_current_admin)):
     """Get all employee-department assignments"""
