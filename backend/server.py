@@ -25,7 +25,7 @@ db = client[os.environ['DB_NAME']]
 # JWT Configuration
 SECRET_KEY = "your-secret-key-here"  # In production, use environment variable
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8 hours
 
 # Create the main app
 app = FastAPI(title="Work Hours Tracker")
