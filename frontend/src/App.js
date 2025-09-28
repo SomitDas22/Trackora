@@ -3994,6 +3994,44 @@ const Dashboard = ({ user, onLogout, orgBranding }) => {
     }
   };
 
+  // Check if user is a manager
+  const checkManagerStatus = async () => {
+    try {
+      const response = await axios.get(`${API}/employee/manager-status`);
+      setIsManager(response.data.is_manager);
+      if (response.data.is_manager) {
+        setManagerInfo(response.data);
+      }
+    } catch (err) {
+      console.error('Error checking manager status:', err);
+    }
+  };
+
+  // Fetch notifications
+  const fetchNotifications = async () => {
+    try {
+      const [notificationsResponse, countResponse] = await Promise.all([
+        axios.get(`${API}/employee/notifications`),
+        axios.get(`${API}/employee/notifications/unread-count`)
+      ]);
+      setNotifications(notificationsResponse.data);
+      setUnreadCount(countResponse.data.unread_count);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  };
+
+  // Mark notification as read
+  const markNotificationRead = async (notificationId) => {
+    try {
+      await axios.put(`${API}/employee/notifications/${notificationId}/read`);
+      // Refresh notifications
+      fetchNotifications();
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
+  };
+
   // Fetch session on mount and periodically
   useEffect(() => {
     fetchActiveSession();
