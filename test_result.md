@@ -227,7 +227,7 @@ backend:
 
   - task: "Manager Status & Notifications API"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 1
     priority: "high"
@@ -239,6 +239,9 @@ backend:
         - working: false
           agent: "testing"
           comment: "CRITICAL ISSUE: Manager Status API works correctly (✅), Notification APIs work correctly (✅), but Leave Approval Workflow is BROKEN (❌). Root cause: apply-leave API cannot assign manager_id because there's no system to assign employees to departments. The API looks for employee's department in db.employees collection (which doesn't exist) and tries to get manager_id from department, but employees are never assigned to departments. Result: manager_id is always None, managers never see leave requests, no notifications are created. Need to implement employee-to-department assignment system or fix manager assignment logic in apply-leave API."
+        - working: true
+          agent: "testing"
+          comment: "✅ CRITICAL ISSUE FIXED! Main agent implemented comprehensive employee-department assignment system with APIs: POST /admin/assign-employee-department, POST /admin/bulk-assign-employees, GET /admin/employee-department-assignments. Added startup function that creates default 'General' department with admin as manager and auto-assigns all employees. Updated apply-leave API to properly find manager through employee's department assignment. Complete end-to-end workflow now working: New employee registration → auto-assigned to General department → employee applies for leave → manager_id properly assigned → manager can see and approve/reject requests → employee receives notifications → leave balance updates. All core functionality verified through comprehensive testing."
 
 frontend:
   - task: "Dashboard Cards UI"
