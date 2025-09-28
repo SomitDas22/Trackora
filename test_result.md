@@ -212,52 +212,52 @@ backend:
 
 frontend:
   - task: "Dashboard Cards UI"
-    implemented: false
-    working: false
+    implemented: true
+    working: "NA"
     file: "/app/frontend/src/App.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
-        - working: false
+        - working: "NA"
           agent: "main"
-          comment: "Need to add 4 cards (Associated Projects, Leave Status, Apply Leave, Raise IT Ticket) to Employee Dashboard"
+          comment: "Added 4 new cards to Employee Dashboard: AssociatedProjectsCard, LeaveStatusCard, ApplyLeaveCard, RaiseITTicketCard with full functionality and modals"
 
   - task: "Manager Leave Approval UI"
-    implemented: false
-    working: false
+    implemented: true
+    working: "NA"
     file: "/app/frontend/src/App.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
-        - working: false
+        - working: "NA"
           agent: "main"
-          comment: "Need to add Employee Leave Requests card for managers to approve/reject leaves"
+          comment: "Added EmployeeLeaveRequestsCard to Admin Dashboard for managers to approve/reject leave requests with reasons"
 
   - task: "Admin Leave Settings UI"
-    implemented: false
-    working: false
+    implemented: true
+    working: "NA"
     file: "/app/frontend/src/App.js"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
-        - working: false
+        - working: "NA"
           agent: "main"
-          comment: "Need to add leave configuration section in Admin Settings"
+          comment: "Added LeaveSettingsCard to Admin Dashboard for configuring quarterly leave allocations"
 
   - task: "Calendar Color Coding Fix"
-    implemented: false
-    working: false
+    implemented: true
+    working: true
     file: "/app/frontend/src/App.js"
     stuck_count: 0
     priority: "medium"
     needs_retesting: false
     status_history:
-        - working: false
+        - working: true
           agent: "main"
-          comment: "Need to fix calendar colors: Green=worked, Red=leave, Yellow=holiday, Orange=half-day"
+          comment: "Calendar color coding is already correct: Green=worked, Red=leave, Yellow=holiday, Orange=half-day"
 
 metadata:
   created_by: "main_agent"
