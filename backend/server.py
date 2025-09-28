@@ -2133,6 +2133,67 @@ async def update_leave_settings(settings: LeaveSettings, current_admin: User = D
         print(f"Error updating leave settings: {e}")
         raise HTTPException(status_code=500, detail="Failed to update leave settings")
 
+# Notification APIs
+@api_router.get("/employee/notifications")
+async def get_employee_notifications(current_user: User = Depends(get_current_user)):
+    """Get notifications for current employee"""
+    try:
+        notifications = await db.notifications.find(
+            {"user_id": current_user.id}, 
+            sort=[("created_at", -1)]
+        ).to_list(length=20)  # Get last 20 notifications
+        
+        formatted_notifications = []
+        for notif in notifications:
+            formatted_notifications.append({
+                "id": notif["id"],
+                "title": notif["title"],
+                "message": notif["message"],
+                "type": notif["type"],
+                "status": notif["status"],
+                "created_at": notif["created_at"].isoformat(),
+                "related_request_id": notif.get("related_request_id")
+            })
+            
+        return formatted_notifications
+    except Exception as e:
+        print(f"Error fetching notifications: {e}")
+        return []
+
+@api_router.put("/employee/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, current_user: User = Depends(get_current_user)):
+    """Mark notification as read"""
+    try:
+        # Update notification status
+        result = await db.notifications.update_one(
+            {"id": notification_id, "user_id": current_user.id},
+            {"$set": {"status": "read"}}
+        )
+        
+        if result.modified_count > 0:
+            return {"message": "Notification marked as read"}
+        else:
+            raise HTTPException(status_code=404, detail="Notification not found")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error marking notification as read: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update notification")
+
+@api_router.get("/employee/notifications/unread-count")
+async def get_unread_notifications_count(current_user: User = Depends(get_current_user)):
+    """Get count of unread notifications"""
+    try:
+        count = await db.notifications.count_documents({
+            "user_id": current_user.id,
+            "status": "unread"
+        })
+        return {"unread_count": count}
+    except Exception as e:
+        print(f"Error getting unread count: {e}")
+        return {"unread_count": 0}
+
 # Logo Upload APIs
 @api_router.post("/admin/upload-logo")
 async def upload_logo(current_admin: User = Depends(get_current_admin)):
