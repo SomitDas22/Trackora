@@ -529,6 +529,26 @@ const AdminDashboard = ({ admin, onLogout }) => {
     }
   };
 
+  // Fetch organization settings
+  const fetchOrganizationSettings = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/organization-settings`);
+      setOrganizationSettings(response.data);
+      setOrgSettingsData({
+        company_name: response.data.company_name || '',
+        establishment_date: response.data.establishment_date || '',
+        company_email: response.data.company_email || '',
+        founder_name: response.data.founder_name || '',
+        founder_email: response.data.founder_email || '',
+        address: response.data.address || '',
+        phone: response.data.phone || '',
+        website: response.data.website || ''
+      });
+    } catch (err) {
+      console.error('Error fetching organization settings:', err);
+    }
+  };
+
   // Fetch user sessions
   const fetchUserSessions = async (userId) => {
     try {
