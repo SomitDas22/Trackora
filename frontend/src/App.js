@@ -2352,6 +2352,237 @@ const AdminDashboard = ({ admin, onLogout }) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Create Department Modal */}
+      <Dialog open={showCreateDepartmentModal} onOpenChange={setShowCreateDepartmentModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Department</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="dept-name">Department Name *</Label>
+              <Input
+                id="dept-name"
+                value={newDepartmentData.name}
+                onChange={(e) => setNewDepartmentData({...newDepartmentData, name: e.target.value})}
+                placeholder="e.g., Engineering, HR, Finance"
+              />
+            </div>
+            <div>
+              <Label htmlFor="dept-description">Description</Label>
+              <Textarea
+                id="dept-description"
+                value={newDepartmentData.description}
+                onChange={(e) => setNewDepartmentData({...newDepartmentData, description: e.target.value})}
+                placeholder="Department description..."
+                rows={3}
+              />
+            </div>
+            <div className="flex space-x-2">
+              <Button onClick={createDepartment} className="flex-1" data-testid="create-department-submit">
+                Create Department
+              </Button>
+              <Button onClick={() => setShowCreateDepartmentModal(false)} variant="outline" className="flex-1">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Manager Modal */}
+      <Dialog open={showCreateManagerModal} onOpenChange={setShowCreateManagerModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign Manager</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="manager-employee">Select Employee *</Label>
+              <Select 
+                value={newManagerData.employee_id} 
+                onValueChange={(value) => setNewManagerData({...newManagerData, employee_id: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose an employee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.filter(emp => !managers.some(m => m.employee_id === emp.id)).map(employee => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                      {employee.name} ({employee.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="manager-department">Select Department *</Label>
+              <Select 
+                value={newManagerData.department_id} 
+                onValueChange={(value) => setNewManagerData({...newManagerData, department_id: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map(dept => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex space-x-2">
+              <Button onClick={createManager} className="flex-1" data-testid="assign-manager-submit">
+                Assign Manager
+              </Button>
+              <Button onClick={() => setShowCreateManagerModal(false)} variant="outline" className="flex-1">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Project Modal */}
+      <Dialog open={showCreateProjectModal} onOpenChange={setShowCreateProjectModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Project</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Project Details */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-700">Project Details</h3>
+              <div>
+                <Label htmlFor="project-name">Project Name *</Label>
+                <Input
+                  id="project-name"
+                  value={newProjectData.name}
+                  onChange={(e) => setNewProjectData({...newProjectData, name: e.target.value})}
+                  placeholder="Enter project name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="project-description">Description</Label>
+                <Textarea
+                  id="project-description"
+                  value={newProjectData.description}
+                  onChange={(e) => setNewProjectData({...newProjectData, description: e.target.value})}
+                  placeholder="Project description..."
+                  rows={2}
+                />
+              </div>
+              <div>
+                <Label htmlFor="project-department">Department *</Label>
+                <Select 
+                  value={newProjectData.department_id} 
+                  onValueChange={(value) => setNewProjectData({...newProjectData, department_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map(dept => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="project-manager">Manager *</Label>
+                <Select 
+                  value={newProjectData.manager_id} 
+                  onValueChange={(value) => setNewProjectData({...newProjectData, manager_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose manager" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {managers.filter(m => !newProjectData.department_id || m.department_id === newProjectData.department_id).map(manager => (
+                      <SelectItem key={manager.id} value={manager.id}>
+                        {manager.employee_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Project Timeline & Team */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-700">Timeline & Team</h3>
+              <div>
+                <Label htmlFor="project-start-date">Start Date</Label>
+                <Input
+                  id="project-start-date"
+                  type="date"
+                  value={newProjectData.start_date}
+                  onChange={(e) => setNewProjectData({...newProjectData, start_date: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="project-end-date">End Date</Label>
+                <Input
+                  id="project-end-date"
+                  type="date"
+                  value={newProjectData.end_date}
+                  onChange={(e) => setNewProjectData({...newProjectData, end_date: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="project-status">Status</Label>
+                <Select 
+                  value={newProjectData.status} 
+                  onValueChange={(value) => setNewProjectData({...newProjectData, status: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="On Hold">On Hold</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Assign Employees</Label>
+                <div className="max-h-32 overflow-y-auto border rounded p-2 space-y-1">
+                  {employees.map(employee => (
+                    <label key={employee.id} className="flex items-center space-x-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedEmployeesForProject.includes(employee.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedEmployeesForProject([...selectedEmployeesForProject, employee.id]);
+                          } else {
+                            setSelectedEmployeesForProject(selectedEmployeesForProject.filter(id => id !== employee.id));
+                          }
+                        }}
+                      />
+                      <span>{employee.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex space-x-2 mt-6">
+            <Button onClick={createProject} className="flex-1" data-testid="create-project-submit">
+              Create Project
+            </Button>
+            <Button onClick={() => setShowCreateProjectModal(false)} variant="outline" className="flex-1">
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
