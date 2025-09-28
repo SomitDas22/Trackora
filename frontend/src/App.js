@@ -2821,6 +2821,617 @@ const AdminDashboard = ({ admin, onLogout, orgBranding }) => {
   );
 };
 
+// New Dashboard Cards Components
+const AssociatedProjectsCard = () => {
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+
+  const fetchProjects = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API}/employee/projects`);
+      setProjects(response.data);
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  return (
+    <>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowModal(true)}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center">
+            <BarChart3 className="mr-2 h-5 w-5 text-green-600" />
+            Associated Projects
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="text-2xl font-bold text-green-600">
+              {projects.length}
+            </div>
+            <p className="text-sm text-gray-600">
+              {projects.length === 1 ? 'Project assigned' : 'Projects assigned'}
+            </p>
+            <Badge variant="outline" className="border-green-200 text-green-700">
+              Click to view details
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>My Associated Projects</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {loading ? (
+              <p>Loading projects...</p>
+            ) : projects.length > 0 ? (
+              projects.map(project => (
+                <Card key={project.id} className="border">
+                  <CardContent className="pt-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-semibold text-lg">{project.name}</h3>
+                        <Badge className={project.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                          {project.status}
+                        </Badge>
+                      </div>
+                      {project.description && (
+                        <p className="text-gray-600">{project.description}</p>
+                      )}
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium">Manager:</span> {project.manager_name}
+                        </div>
+                        <div>
+                          <span className="font-medium">Start Date:</span> {project.start_date || 'Not set'}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">No projects assigned yet</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+const LeaveStatusCard = () => {
+  const [leaveBalance, setLeaveBalance] = useState(null);
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+
+  const fetchLeaveData = async () => {
+    setLoading(true);
+    try {
+      const [balanceResponse, requestsResponse] = await Promise.all([
+        axios.get(`${API}/employee/leave-balance`),
+        axios.get(`${API}/employee/leave-requests`)
+      ]);
+      setLeaveBalance(balanceResponse.data);
+      setLeaveRequests(requestsResponse.data);
+    } catch (err) {
+      console.error('Error fetching leave data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaveData();
+  }, []);
+
+  const totalAvailable = leaveBalance ? 
+    leaveBalance.casual_leave.available + leaveBalance.sick_leave.available + leaveBalance.leave_without_pay.available : 0;
+
+  return (
+    <>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowModal(true)}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center">
+            <Calendar className="mr-2 h-5 w-5 text-blue-600" />
+            Leave Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="text-2xl font-bold text-blue-600">
+              {totalAvailable}
+            </div>
+            <p className="text-sm text-gray-600">
+              Days available
+            </p>
+            <Badge variant="outline" className="border-blue-200 text-blue-700">
+              Q{leaveBalance?.quarter || 1} Balance
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Leave Status & History</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {loading ? (
+              <p>Loading leave data...</p>
+            ) : (
+              <>
+                {/* Leave Balance */}
+                {leaveBalance && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Current Balance (Q{leaveBalance.quarter})</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <Card>
+                        <CardContent className="pt-4">
+                          <div className="text-center space-y-2">
+                            <h4 className="font-medium">Casual Leave</h4>
+                            <div className="text-xl font-bold text-green-600">
+                              {leaveBalance.casual_leave.available}
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              Used: {leaveBalance.casual_leave.used} / {leaveBalance.casual_leave.allocated}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="pt-4">
+                          <div className="text-center space-y-2">
+                            <h4 className="font-medium">Sick Leave</h4>
+                            <div className="text-xl font-bold text-orange-600">
+                              {leaveBalance.sick_leave.available}
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              Used: {leaveBalance.sick_leave.used} / {leaveBalance.sick_leave.allocated}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="pt-4">
+                          <div className="text-center space-y-2">
+                            <h4 className="font-medium">Leave without Pay</h4>
+                            <div className="text-xl font-bold text-purple-600">
+                              {leaveBalance.leave_without_pay.available}
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              Used: {leaveBalance.leave_without_pay.used} / {leaveBalance.leave_without_pay.allocated}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                )}
+
+                {/* Leave History */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Leave Requests</h3>
+                  <div className="max-h-64 overflow-y-auto space-y-3">
+                    {leaveRequests.length > 0 ? (
+                      leaveRequests.map(request => (
+                        <Card key={request.id} className="border">
+                          <CardContent className="pt-4">
+                            <div className="flex justify-between items-start">
+                              <div className="space-y-2">
+                                <div className="font-medium">{request.leave_type}</div>
+                                <div className="text-sm text-gray-600">
+                                  {request.start_date} to {request.end_date} ({request.days_count} days)
+                                </div>
+                                <div className="text-sm">{request.reason}</div>
+                                {request.manager_reason && request.status === 'rejected' && (
+                                  <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                                    <span className="font-medium">Rejection Reason:</span> {request.manager_reason}
+                                  </div>
+                                )}
+                              </div>
+                              <Badge className={
+                                request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }>
+                                {request.status}
+                              </Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">No leave requests found</p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+const ApplyLeaveCard = () => {
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    leave_type: '',
+    start_date: '',
+    end_date: '',
+    reason: '',
+    days_count: 1
+  });
+
+  const calculateDays = () => {
+    if (formData.start_date && formData.end_date) {
+      const start = new Date(formData.start_date);
+      const end = new Date(formData.end_date);
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      return diffDays;
+    }
+    return 1;
+  };
+
+  useEffect(() => {
+    const days = calculateDays();
+    setFormData(prev => ({ ...prev, days_count: days }));
+  }, [formData.start_date, formData.end_date]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      await axios.post(`${API}/employee/apply-leave`, formData);
+      alert('Leave application submitted successfully!');
+      setShowModal(false);
+      setFormData({
+        leave_type: '',
+        start_date: '',
+        end_date: '',
+        reason: '',
+        days_count: 1
+      });
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to apply for leave');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowModal(true)}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center">
+            <UserCheck className="mr-2 h-5 w-5 text-purple-600" />
+            Apply Leave
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="text-2xl font-bold text-purple-600">
+              +
+            </div>
+            <p className="text-sm text-gray-600">
+              Submit leave request
+            </p>
+            <Badge variant="outline" className="border-purple-200 text-purple-700">
+              Click to apply
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Apply for Leave</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="leave_type">Leave Type</Label>
+              <Select value={formData.leave_type} onValueChange={(value) => setFormData({...formData, leave_type: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select leave type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Casual Leave">Casual Leave</SelectItem>
+                  <SelectItem value="Sick Leave">Sick Leave</SelectItem>
+                  <SelectItem value="Leave without Pay">Leave without Pay</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="start_date">Start Date</Label>
+                <Input
+                  id="start_date"
+                  type="date"
+                  value={formData.start_date}
+                  onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="end_date">End Date</Label>
+                <Input
+                  id="end_date"
+                  type="date"
+                  value={formData.end_date}
+                  onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="days_count">Days Count</Label>
+              <Input
+                id="days_count"
+                type="number"
+                value={formData.days_count}
+                readOnly
+                className="bg-gray-50"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="reason">Reason</Label>
+              <Textarea
+                id="reason"
+                value={formData.reason}
+                onChange={(e) => setFormData({...formData, reason: e.target.value})}
+                placeholder="Please provide reason for leave"
+                required
+              />
+            </div>
+
+            <div className="flex space-x-2 pt-4">
+              <Button type="submit" disabled={loading} className="flex-1">
+                {loading ? 'Submitting...' : 'Submit Application'}
+              </Button>
+              <Button type="button" onClick={() => setShowModal(false)} variant="outline" className="flex-1">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+const RaiseITTicketCard = () => {
+  const [showModal, setShowModal] = useState(false);
+  const [showTicketsModal, setShowTicketsModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [tickets, setTickets] = useState([]);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    priority: 'Medium'
+  });
+
+  const itCategories = [
+    "Hardware Issues",
+    "Software Issues", 
+    "Network/Connectivity",
+    "Account/Access",
+    "Security",
+    "General Support"
+  ];
+
+  const fetchTickets = async () => {
+    try {
+      const response = await axios.get(`${API}/employee/it-tickets`);
+      setTickets(response.data);
+    } catch (err) {
+      console.error('Error fetching IT tickets:', err);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      await axios.post(`${API}/employee/it-tickets`, formData);
+      alert('IT ticket created successfully!');
+      setShowModal(false);
+      setFormData({
+        title: '',
+        description: '',
+        category: '',
+        priority: 'Medium'
+      });
+      fetchTickets(); // Refresh tickets list
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to create IT ticket');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center">
+            <Clock className="mr-2 h-5 w-5 text-red-600" />
+            Raise IT Ticket
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="text-2xl font-bold text-red-600">
+              ?
+            </div>
+            <p className="text-sm text-gray-600">
+              Need IT support?
+            </p>
+            <div className="flex space-x-2">
+              <Badge 
+                variant="outline" 
+                className="border-red-200 text-red-700 cursor-pointer"
+                onClick={() => setShowModal(true)}
+              >
+                Create ticket
+              </Badge>
+              <Badge 
+                variant="outline" 
+                className="border-gray-200 text-gray-700 cursor-pointer"
+                onClick={() => { fetchTickets(); setShowTicketsModal(true); }}
+              >
+                View tickets
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Create Ticket Modal */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Raise IT Support Ticket</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({...formData, title: e.target.value})}
+                placeholder="Brief description of the issue"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="category">Category</Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {itCategories.map(category => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="priority">Priority</Label>
+              <Select value={formData.priority} onValueChange={(value) => setFormData({...formData, priority: value})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                placeholder="Provide detailed description of the issue"
+                required
+                rows={4}
+              />
+            </div>
+
+            <div className="flex space-x-2 pt-4">
+              <Button type="submit" disabled={loading} className="flex-1">
+                {loading ? 'Creating...' : 'Create Ticket'}
+              </Button>
+              <Button type="button" onClick={() => setShowModal(false)} variant="outline" className="flex-1">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Tickets Modal */}
+      <Dialog open={showTicketsModal} onOpenChange={setShowTicketsModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>My IT Tickets</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-96 overflow-y-auto space-y-3">
+            {tickets.length > 0 ? (
+              tickets.map(ticket => (
+                <Card key={ticket.id} className="border">
+                  <CardContent className="pt-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-medium">{ticket.title}</h4>
+                        <div className="flex space-x-2">
+                          <Badge className={
+                            ticket.priority === 'Critical' ? 'bg-red-100 text-red-800' :
+                            ticket.priority === 'High' ? 'bg-orange-100 text-orange-800' :
+                            ticket.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }>
+                            {ticket.priority}
+                          </Badge>
+                          <Badge variant="outline">
+                            {ticket.status}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Category: {ticket.category}
+                      </div>
+                      <div className="text-sm text-gray-700">
+                        {ticket.description}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Created: {new Date(ticket.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">No IT tickets found</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
 const Dashboard = ({ user, onLogout, orgBranding }) => {
   const [activeSession, setActiveSession] = useState(null);
   const [loading, setLoading] = useState(false);
