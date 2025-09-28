@@ -256,8 +256,12 @@ const Dashboard = ({ user, onLogout }) => {
     fetchSessionHistory();
     fetchCalendarData();
     fetchDashboardStats();
+    checkCanStartToday();
     
-    const interval = setInterval(fetchActiveSession, 5000); // Refresh every 5 seconds
+    const interval = setInterval(() => {
+      fetchActiveSession();
+      checkCanStartToday();
+    }, 5000); // Refresh every 5 seconds
     return () => clearInterval(interval);
   }, []);
 
