@@ -1044,6 +1044,256 @@ async def delete_employee(emp_id: str, current_admin: User = Depends(get_current
     
     return {"message": "Employee deleted successfully"}
 
+# Department Management
+@api_router.get("/admin/departments")
+async def get_all_departments(current_admin: User = Depends(get_current_admin)):
+    """Get all departments"""
+    departments = await db.departments.find({}, {"_id": 0}).to_list(length=None)
+    
+    # Add employee and project counts
+    for dept in departments:
+        managers_count = await db.managers.count_documents({"department_id": dept["id"]})
+        projects_count = await db.projects.count_documents({"department_id": dept["id"]})
+        dept["managers_count"] = managers_count
+        dept["projects_count"] = projects_count
+    
+    return departments
+
+@api_router.post("/admin/create-department")
+async def create_department(dept_data: DepartmentCreate, current_admin: User = Depends(get_current_admin)):
+    """Create a new department"""
+    new_dept = {
+        "id": str(uuid.uuid4()),
+        "name": dept_data.name,
+        "description": dept_data.description,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Check if department already exists
+    existing = await db.departments.find_one({"name": dept_data.name})
+    if existing:
+        raise HTTPException(status_code=400, detail="Department with this name already exists")
+    
+    await db.departments.insert_one(new_dept)
+    return {"message": "Department created successfully", "department_id": new_dept["id"]}
+
+# Manager Management
+@api_router.get("/admin/managers")
+async def get_all_managers(current_admin: User = Depends(get_current_admin)):
+    """Get all managers with their details"""
+    managers = await db.managers.find({}, {"_id": 0}).to_list(length=None)
+    
+    manager_list = []
+    for manager in managers:
+        # Get employee details
+        employee = await db.users.find_one({"id": manager["employee_id"]})
+        department = await db.departments.find_one({"id": manager["department_id"]})
+        
+        if employee and department:
+            manager_info = {
+                "id": manager["id"],
+                "employee_id": manager["employee_id"],
+                "employee_name": employee["name"],
+                "employee_email": employee["email"],
+                "department_id": manager["department_id"],
+                "department_name": department["name"],
+                "created_at": manager.get("created_at", "")
+            }
+            manager_list.append(manager_info)
+    
+    return manager_list
+
+@api_router.post("/admin/create-manager")
+async def create_manager(manager_data: ManagerCreate, current_admin: User = Depends(get_current_admin)):
+    """Assign an employee as manager"""
+    # Check if employee exists and is not admin
+    employee = await db.users.find_one({"id": manager_data.employee_id, "role": "employee"})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Check if department exists
+    department = await db.departments.find_one({"id": manager_data.department_id})
+    if not department:
+        raise HTTPException(status_code=404, detail="Department not found")
+    
+    # Check if employee is already a manager
+    existing_manager = await db.managers.find_one({"employee_id": manager_data.employee_id})
+    if existing_manager:
+        raise HTTPException(status_code=400, detail="Employee is already a manager")
+    
+    new_manager = {
+        "id": str(uuid.uuid4()),
+        "employee_id": manager_data.employee_id,
+        "department_id": manager_data.department_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.managers.insert_one(new_manager)
+    return {"message": "Manager assigned successfully", "manager_id": new_manager["id"]}
+
+# Project Management
+@api_router.get("/admin/projects")
+async def get_all_projects(current_admin: User = Depends(get_current_admin)):
+    """Get all projects with their details"""
+    projects = await db.projects.find({}, {"_id": 0}).to_list(length=None)
+    
+    project_list = []
+    for project in projects:
+        # Get department and manager details
+        department = await db.departments.find_one({"id": project["department_id"]})
+        manager = await db.managers.find_one({"id": project["manager_id"]})
+        
+        if department and manager:
+            manager_employee = await db.users.find_one({"id": manager["employee_id"]})
+            
+            # Get assigned employees
+            assigned_employees = []
+            for emp_id in project.get("employee_ids", []):
+                emp = await db.users.find_one({"id": emp_id})
+                if emp:
+                    assigned_employees.append({
+                        "id": emp["id"],
+                        "name": emp["name"],
+                        "email": emp["email"]
+                    })
+            
+            project_info = {
+                "id": project["id"],
+                "name": project["name"],
+                "description": project["description"],
+                "department_id": project["department_id"],
+                "department_name": department["name"],
+                "manager_id": project["manager_id"],
+                "manager_name": manager_employee["name"] if manager_employee else "Unknown",
+                "assigned_employees": assigned_employees,
+                "employee_count": len(assigned_employees),
+                "start_date": project.get("start_date", ""),
+                "end_date": project.get("end_date", ""),
+                "status": project.get("status", "Active"),
+                "created_at": project.get("created_at", "")
+            }
+            project_list.append(project_info)
+    
+    return project_list
+
+@api_router.post("/admin/create-project")
+async def create_project(project_data: ProjectCreate, current_admin: User = Depends(get_current_admin)):
+    """Create a new project"""
+    # Check if department and manager exist
+    department = await db.departments.find_one({"id": project_data.department_id})
+    if not department:
+        raise HTTPException(status_code=404, detail="Department not found")
+    
+    manager = await db.managers.find_one({"id": project_data.manager_id})
+    if not manager:
+        raise HTTPException(status_code=404, detail="Manager not found")
+    
+    # Verify all employee IDs exist
+    for emp_id in project_data.employee_ids:
+        employee = await db.users.find_one({"id": emp_id, "role": "employee"})
+        if not employee:
+            raise HTTPException(status_code=404, detail=f"Employee {emp_id} not found")
+    
+    new_project = {
+        "id": str(uuid.uuid4()),
+        "name": project_data.name,
+        "description": project_data.description,
+        "department_id": project_data.department_id,
+        "manager_id": project_data.manager_id,
+        "employee_ids": project_data.employee_ids,
+        "start_date": project_data.start_date,
+        "end_date": project_data.end_date,
+        "status": project_data.status,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.projects.insert_one(new_project)
+    return {"message": "Project created successfully", "project_id": new_project["id"]}
+
+# Tree Structure for Manager Assignments
+@api_router.get("/admin/organization-tree")
+async def get_organization_tree(current_admin: User = Depends(get_current_admin)):
+    """Get complete organization tree structure"""
+    # Get all data
+    departments = await db.departments.find({}, {"_id": 0}).to_list(length=None)
+    managers = await db.managers.find({}, {"_id": 0}).to_list(length=None)
+    projects = await db.projects.find({}, {"_id": 0}).to_list(length=None)
+    employees = await db.users.find({"role": "employee"}, {"_id": 0}).to_list(length=None)
+    
+    # Build tree structure
+    tree = []
+    
+    for department in departments:
+        dept_node = {
+            "id": department["id"],
+            "name": department["name"],
+            "type": "department",
+            "description": department.get("description", ""),
+            "children": []
+        }
+        
+        # Find managers in this department
+        dept_managers = [m for m in managers if m["department_id"] == department["id"]]
+        
+        for manager in dept_managers:
+            # Get manager employee details
+            manager_employee = next((e for e in employees if e["id"] == manager["employee_id"]), None)
+            if not manager_employee:
+                continue
+            
+            manager_node = {
+                "id": manager["id"],
+                "name": manager_employee["name"],
+                "type": "manager",
+                "employee_id": manager["employee_id"],
+                "email": manager_employee["email"],
+                "children": []
+            }
+            
+            # Find projects managed by this manager
+            manager_projects = [p for p in projects if p["manager_id"] == manager["id"]]
+            
+            for project in manager_projects:
+                project_employees = []
+                for emp_id in project.get("employee_ids", []):
+                    employee = next((e for e in employees if e["id"] == emp_id), None)
+                    if employee:
+                        project_employees.append({
+                            "id": employee["id"],
+                            "name": employee["name"],
+                            "type": "employee",
+                            "email": employee["email"],
+                            "designation": employee.get("designation", ""),
+                            "children": []
+                        })
+                
+                project_node = {
+                    "id": project["id"],
+                    "name": project["name"],
+                    "type": "project",
+                    "description": project.get("description", ""),
+                    "status": project.get("status", "Active"),
+                    "start_date": project.get("start_date", ""),
+                    "end_date": project.get("end_date", ""),
+                    "children": project_employees
+                }
+                
+                manager_node["children"].append(project_node)
+            
+            dept_node["children"].append(manager_node)
+        
+        tree.append(dept_node)
+    
+    return {
+        "tree": tree,
+        "summary": {
+            "departments": len(departments),
+            "managers": len(managers),
+            "projects": len(projects),
+            "employees": len(employees)
+        }
+    }
+
 class ManagerAssignment(BaseModel):
     manager_id: str
     employee_ids: List[str]
