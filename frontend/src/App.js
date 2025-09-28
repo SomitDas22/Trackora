@@ -273,7 +273,7 @@ const TreeNode = ({ node, level = 0 }) => {
   );
 };
 
-const AdminLoginPage = ({ onAdminLogin }) => {
+const AdminLoginPage = ({ onAdminLogin, orgBranding }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
