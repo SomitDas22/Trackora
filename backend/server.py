@@ -386,6 +386,175 @@ async def end_break(current_user: User = Depends(get_current_user)):
     
     return {"message": "Break ended successfully"}
 
+# History and Calendar routes
+@api_router.get("/sessions/history")
+async def get_session_history(
+    from_date: str = None,
+    to_date: str = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get session history for the user"""
+    query = {"user_id": current_user.id, "end_time": {"$ne": None}}
+    
+    # Add date filters if provided
+    if from_date:
+        start_date = datetime.fromisoformat(from_date).replace(tzinfo=timezone.utc)
+        query["start_time"] = {"$gte": start_date}
+    
+    if to_date:
+        end_date = datetime.fromisoformat(to_date).replace(tzinfo=timezone.utc)
+        if "start_time" in query:
+            query["start_time"]["$lte"] = end_date
+        else:
+            query["start_time"] = {"$lte": end_date}
+    
+    sessions = await db.sessions.find(query).sort("start_time", -1).to_list(length=100)
+    
+    history = []
+    for session_doc in sessions:
+        session = WorkSession(**session_doc)
+        
+        # Get breaks for this session
+        breaks = await db.breaks.find({"session_id": session.id}).to_list(length=None)
+        break_count = len(breaks)
+        total_break_seconds = session.total_break_seconds
+        
+        # Get timesheet
+        timesheet = await db.timesheets.find_one({"session_id": session.id})
+        
+        # Determine day type
+        day_type = "Half Day" if session.is_half_day else "Full Work Day"
+        
+        history_item = {
+            "id": session.id,
+            "date": session.start_time.date().isoformat(),
+            "login_time": session.start_time.strftime("%H:%M:%S"),
+            "logout_time": session.end_time.strftime("%H:%M:%S") if session.end_time else None,
+            "total_duration": str(timedelta(seconds=int((session.end_time - session.start_time).total_seconds()))) if session.end_time else None,
+            "effective_duration": str(timedelta(seconds=session.effective_seconds)),
+            "break_count": break_count,
+            "break_duration": str(timedelta(seconds=int(total_break_seconds))),
+            "day_type": day_type,
+            "timesheet_status": "Submitted" if timesheet else "Missing"
+        }
+        history.append(history_item)
+    
+    return history
+
+@api_router.get("/calendar/month")
+async def get_calendar_month(
+    year: int,
+    month: int,
+    current_user: User = Depends(get_current_user)
+):
+    """Get calendar data for a specific month"""
+    from calendar import monthrange
+    import calendar as cal
+    
+    # Get first and last day of the month
+    first_day = datetime(year, month, 1, tzinfo=timezone.utc)
+    last_day_num = monthrange(year, month)[1]
+    last_day = datetime(year, month, last_day_num, 23, 59, 59, tzinfo=timezone.utc)
+    
+    # Get all sessions for the month
+    sessions = await db.sessions.find({
+        "user_id": current_user.id,
+        "start_time": {"$gte": first_day, "$lte": last_day},
+        "end_time": {"$ne": None}
+    }).to_list(length=None)
+    
+    # Get all leaves for the month
+    leaves = await db.leaves.find({
+        "user_id": current_user.id,
+        "date": {
+            "$gte": first_day.date().isoformat(),
+            "$lte": last_day.date().isoformat()
+        }
+    }).to_list(length=None)
+    
+    # Get holidays for the month
+    holidays = await db.holidays.find({
+        "date": {
+            "$gte": first_day.date().isoformat(),
+            "$lte": last_day.date().isoformat()
+        }
+    }).to_list(length=None)
+    
+    # Build calendar data
+    calendar_days = []
+    for day in range(1, last_day_num + 1):
+        date_str = f"{year}-{month:02d}-{day:02d}"
+        
+        # Check what type of day this is
+        day_type = None
+        
+        # Check if it's a holiday
+        if any(h["date"] == date_str for h in holidays):
+            day_type = "holiday"
+        
+        # Check if user worked
+        elif any(datetime.fromisoformat(s["start_time"]).date().isoformat() == date_str for s in sessions):
+            session = next(s for s in sessions if datetime.fromisoformat(s["start_time"]).date().isoformat() == date_str)
+            day_type = "half-day" if session.get("is_half_day") else "worked"
+        
+        # Check if user was on leave
+        elif any(l["date"] == date_str for l in leaves):
+            leave = next(l for l in leaves if l["date"] == date_str)
+            day_type = "half-day" if leave["type"] == "half" else "leave"
+        
+        calendar_days.append({
+            "date": date_str,
+            "day": day,
+            "type": day_type,
+            "weekday": cal.weekday(year, month, day)
+        })
+    
+    return {
+        "year": year,
+        "month": month,
+        "days": calendar_days
+    }
+
+@api_router.get("/holidays")
+async def get_holidays(year: int):
+    """Get holidays for a specific year"""
+    holidays = await db.holidays.find({
+        "date": {"$regex": f"^{year}"}
+    }).to_list(length=None)
+    return holidays
+
+# Dashboard stats
+@api_router.get("/dashboard/stats")
+async def get_dashboard_stats(
+    year: int = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get dashboard statistics"""
+    if not year:
+        year = datetime.now().year
+    
+    # Get leave counts by month
+    leaves_by_month = []
+    for month in range(1, 13):
+        month_start = f"{year}-{month:02d}-01"
+        if month == 12:
+            month_end = f"{year + 1}-01-01"
+        else:
+            month_end = f"{year}-{month + 1:02d}-01"
+        
+        leave_count = await db.leaves.count_documents({
+            "user_id": current_user.id,
+            "date": {"$gte": month_start, "$lt": month_end}
+        })
+        
+        leaves_by_month.append({
+            "month": month,
+            "month_name": cal.month_name[month],
+            "leaves_count": leave_count
+        })
+    
+    return {"leaves_by_month": leaves_by_month}
+
 # Half day route
 @api_router.post("/leaves/half-day")
 async def apply_half_day(
