@@ -767,6 +767,8 @@ const AdminDashboard = ({ admin, onLogout, orgBranding }) => {
     company_name: '', establishment_date: '', company_email: '',
     founder_name: '', founder_email: '', address: '', phone: '', website: ''
   });
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoPreview, setLogoPreview] = useState(null);
 
   // Fetch all users
   const fetchUsers = async () => {
