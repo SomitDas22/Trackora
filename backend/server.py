@@ -225,6 +225,46 @@ async def login(login_data: UserLogin):
 async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
+# Admin Authentication routes
+@api_router.post("/admin/auth/login", response_model=Token)
+async def admin_login(login_data: AdminLogin):
+    # Find admin by email
+    user_doc = await db.users.find_one({
+        "email": login_data.email,
+        "role": "admin"
+    })
+    
+    if not user_doc or not verify_password(login_data.password, user_doc["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid admin credentials")
+    
+    access_token = create_access_token(data={"sub": user_doc["id"]})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@api_router.post("/admin/auth/create", response_model=Token)
+async def create_admin(admin_data: AdminCreate):
+    # Check if admin exists
+    existing_admin = await db.users.find_one({"email": admin_data.email})
+    if existing_admin:
+        raise HTTPException(status_code=400, detail="Admin already exists")
+    
+    # Create admin user
+    admin = User(
+        name=admin_data.name,
+        email=admin_data.email,
+        phone="",  # Admins don't need phone
+        password_hash=hash_password(admin_data.password),
+        role="admin"
+    )
+    
+    await db.users.insert_one(admin.dict())
+    
+    access_token = create_access_token(data={"sub": admin.id})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@api_router.get("/admin/auth/me", response_model=User)
+async def get_admin_me(current_admin: User = Depends(get_current_admin)):
+    return current_admin
+
 # Session routes
 @api_router.get("/sessions/can-start-today")
 async def can_start_session_today(current_user: User = Depends(get_current_user)):
