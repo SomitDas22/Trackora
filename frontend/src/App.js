@@ -186,6 +186,482 @@ const formatTime = (seconds) => {
   return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
+const AdminLoginPage = ({ onAdminLogin }) => {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await axios.post(`${API}/admin/auth/login`, {
+        email: formData.email,
+        password: formData.password
+      });
+
+      localStorage.setItem('adminToken', response.data.access_token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
+      
+      // Fetch admin data
+      const adminResponse = await axios.get(`${API}/admin/auth/me`);
+      onAdminLogin(adminResponse.data);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Admin authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-blue-900 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md border-slate-700">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-gray-800">
+            Admin Login
+          </CardTitle>
+          <p className="text-gray-600">Work Hours Tracker - Admin Panel</p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="admin-email">Admin Email</Label>
+              <Input
+                id="admin-email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                placeholder="admin@worktracker.com"
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="admin-password">Password</Label>
+              <Input
+                id="admin-password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                required
+              />
+            </div>
+            
+            {error && (
+              <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
+                {error}
+              </div>
+            )}
+            
+            <Button 
+              type="submit" 
+              className="w-full bg-slate-700 hover:bg-slate-800"
+              disabled={loading}
+              data-testid="admin-login-submit"
+            >
+              {loading ? 'Signing In...' : 'Admin Sign In'}
+            </Button>
+          </form>
+          
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => window.location.href = '/'}
+              className="text-blue-600 hover:underline text-sm"
+              data-testid="back-to-user-login"
+            >
+              ← Back to Employee Login
+            </button>
+          </div>
+          
+          <div className="mt-2 text-xs text-center text-gray-500 bg-gray-50 p-2 rounded">
+            Default Admin: admin@worktracker.com / admin123
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+const AdminDashboard = ({ admin, onLogout }) => {
+  const [users, setUsers] = useState([]);
+  const [adminStats, setAdminStats] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userSessions, setUserSessions] = useState([]);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [loading, setLoading] = useState(false);
+
+  // Fetch all users
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/users`);
+      setUsers(response.data);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    }
+  };
+
+  // Fetch admin dashboard stats
+  const fetchAdminStats = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/dashboard-stats`);
+      setAdminStats(response.data);
+    } catch (err) {
+      console.error('Error fetching admin stats:', err);
+    }
+  };
+
+  // Fetch user sessions
+  const fetchUserSessions = async (userId) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API}/admin/user/${userId}/sessions`);
+      setUserSessions(response.data);
+      setSelectedUser(users.find(u => u.id === userId));
+    } catch (err) {
+      console.error('Error fetching user sessions:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    fetchAdminStats();
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    delete axios.defaults.headers.common['Authorization'];
+    onLogout();
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Admin Header */}
+      <div className="bg-slate-800 shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
+            <p className="text-slate-300">Work Hours Tracker Administration</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="text-right">
+              <div className="text-sm text-slate-300">Logged in as</div>
+              <div className="text-white font-medium">{admin.name}</div>
+            </div>
+            <Button 
+              onClick={handleLogout} 
+              variant="outline"
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              data-testid="admin-logout-btn"
+            >
+              Logout
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Navigation Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="overview" className="flex items-center gap-2" data-testid="admin-overview-tab">
+              <BarChart3 className="h-4 w-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-2" data-testid="admin-users-tab">
+              <UserCheck className="h-4 w-4" />
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="sessions" className="flex items-center gap-2" data-testid="admin-sessions-tab">
+              <Clock className="h-4 w-4" />
+              Sessions
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            {adminStats && (
+              <>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-blue-100">Total Users</p>
+                          <p className="text-3xl font-bold">{adminStats.total_users}</p>
+                        </div>
+                        <UserCheck className="h-8 w-8 text-blue-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-green-100">Active Today</p>
+                          <p className="text-3xl font-bold">{adminStats.active_today}</p>
+                        </div>
+                        <Clock className="h-8 w-8 text-green-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-purple-100">Sessions This Month</p>
+                          <p className="text-3xl font-bold">{adminStats.sessions_this_month}</p>
+                        </div>
+                        <Calendar className="h-8 w-8 text-purple-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-orange-100">Leaves This Month</p>
+                          <p className="text-3xl font-bold">{adminStats.leaves_this_month}</p>
+                        </div>
+                        <Coffee className="h-8 w-8 text-orange-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Recent Sessions */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <History className="h-5 w-5" />
+                      Recent Sessions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {adminStats.recent_sessions.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Employee</TableHead>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Login</TableHead>
+                              <TableHead>Logout</TableHead>
+                              <TableHead>Effective Hours</TableHead>
+                              <TableHead>Type</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {adminStats.recent_sessions.map((session, index) => (
+                              <TableRow key={index}>
+                                <TableCell className="font-medium">
+                                  <div>
+                                    <div>{session.user_name}</div>
+                                    <div className="text-xs text-gray-500">{session.user_email}</div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>{new Date(session.date).toLocaleDateString('en-IN')}</TableCell>
+                                <TableCell>{session.login_time}</TableCell>
+                                <TableCell>{session.logout_time}</TableCell>
+                                <TableCell className="font-mono">{session.effective_hours}h</TableCell>
+                                <TableCell>
+                                  <Badge variant={session.day_type === 'Half Day' ? 'secondary' : 'default'}>
+                                    {session.day_type}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No recent sessions found</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </TabsContent>
+
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCheck className="h-5 w-5" />
+                  All Users
+                </CardTitle>
+                <p className="text-gray-600">Manage and view all employee accounts</p>
+              </CardHeader>
+              <CardContent>
+                {users.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Employee</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Joined</TableHead>
+                          <TableHead>Sessions</TableHead>
+                          <TableHead>Leaves</TableHead>
+                          <TableHead>Last Login</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users.map((user) => (
+                          <TableRow key={user.id}>
+                            <TableCell className="font-medium">
+                              <div>
+                                <div>{user.name}</div>
+                                <Badge variant="outline" className="border-green-200 text-green-700">
+                                  {user.status}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div>{user.email}</div>
+                                <div className="text-gray-500">{user.phone}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{new Date(user.created_at).toLocaleDateString('en-IN')}</TableCell>
+                            <TableCell className="text-center">{user.total_sessions}</TableCell>
+                            <TableCell className="text-center">{user.total_leaves}</TableCell>
+                            <TableCell>
+                              {user.last_login 
+                                ? new Date(user.last_login).toLocaleDateString('en-IN')
+                                : 'Never'
+                              }
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                onClick={() => fetchUserSessions(user.id)}
+                                variant="outline"
+                                size="sm"
+                                data-testid={`view-user-${user.id}`}
+                              >
+                                View Sessions
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No users found</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Sessions Tab */}
+          <TabsContent value="sessions" className="space-y-6">
+            {selectedUser ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    {selectedUser.name}'s Sessions
+                  </CardTitle>
+                  <p className="text-gray-600">{selectedUser.email}</p>
+                  <Button
+                    onClick={() => {setSelectedUser(null); setUserSessions([]);}}
+                    variant="outline"
+                    size="sm"
+                    className="w-fit"
+                  >
+                    ← Back to Users
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="mt-2 text-gray-600">Loading sessions...</p>
+                    </div>
+                  ) : userSessions.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Login</TableHead>
+                            <TableHead>Logout</TableHead>
+                            <TableHead>Effective Hours</TableHead>
+                            <TableHead>Breaks</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Task</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {userSessions.map((session) => (
+                            <TableRow key={session.id}>
+                              <TableCell>{new Date(session.date).toLocaleDateString('en-IN')}</TableCell>
+                              <TableCell>{session.login_time}</TableCell>
+                              <TableCell>{session.logout_time}</TableCell>
+                              <TableCell className="font-mono">{session.effective_hours}h</TableCell>
+                              <TableCell className="text-center">{session.break_count}</TableCell>
+                              <TableCell>
+                                <Badge variant={session.day_type === 'Half Day' ? 'secondary' : 'default'}>
+                                  {session.day_type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  <div className="font-medium">{session.task_id || 'N/A'}</div>
+                                  <div className="text-gray-500 truncate max-w-xs">
+                                    {session.work_description || 'No description'}
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No sessions found for this user</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <UserCheck className="h-16 w-16 mx-auto mb-4 opacity-50 text-gray-400" />
+                  <h3 className="text-lg font-medium text-gray-600 mb-2">Select a User</h3>
+                  <p className="text-gray-500">Go to the Users tab and click "View Sessions" to see detailed session history</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+};
+
 const Dashboard = ({ user, onLogout }) => {
   const [activeSession, setActiveSession] = useState(null);
   const [loading, setLoading] = useState(false);
