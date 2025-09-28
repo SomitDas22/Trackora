@@ -174,6 +174,19 @@ class OrganizationUpdate(BaseModel):
     phone: str = ""
     website: str = ""
 
+class LeaveApplication(BaseModel):
+    leave_type: str  # Casual, Sick, LWP
+    start_date: str
+    end_date: str
+    reason: str
+    days_count: float
+
+class ITTicket(BaseModel):
+    title: str
+    description: str
+    category: str  # Hardware, Software, Network, Account, Other
+    priority: str = "Medium"  # Low, Medium, High, Critical
+
 # Utility functions
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
