@@ -886,6 +886,19 @@ async def startup_db():
             {"id": str(uuid.uuid4()), "date": "2025-12-25", "name": "Christmas Day"}
         ]
         await db.holidays.insert_many(sample_holidays)
+    
+    # Create default admin if none exists
+    existing_admin = await db.users.find_one({"role": "admin"})
+    if not existing_admin:
+        default_admin = User(
+            name="Admin",
+            email="admin@worktracker.com",
+            phone="",
+            password_hash=hash_password("admin123"),
+            role="admin"
+        )
+        await db.users.insert_one(default_admin.dict())
+        print("Default admin created: admin@worktracker.com / admin123")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
