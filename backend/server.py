@@ -1927,7 +1927,31 @@ async def get_employee_leave_requests(current_user: User = Depends(get_current_u
         print(f"Error fetching leave requests: {e}")
         return []
 
-# Manager Leave Approval APIs
+# Manager Status Check API
+@api_router.get("/employee/manager-status")
+async def check_manager_status(current_user: User = Depends(get_current_user)):
+    """Check if current user is a manager"""
+    try:
+        # Check if user is assigned as a manager in any department
+        manager_assignment = await db.managers.find_one({"employee_id": current_user.id})
+        
+        if manager_assignment:
+            # Get department details
+            department = await db.departments.find_one({"id": manager_assignment.get("department_id")})
+            return {
+                "is_manager": True,
+                "department_id": manager_assignment.get("department_id"),
+                "department_name": department.get("name") if department else "Unknown Department",
+                "manager_assignment_id": manager_assignment.get("id")
+            }
+        else:
+            return {"is_manager": False}
+            
+    except Exception as e:
+        print(f"Error checking manager status: {e}")
+        return {"is_manager": False}
+
+# Manager Leave Approval APIs  
 @api_router.get("/manager/leave-requests")
 async def get_pending_leave_requests(current_user: User = Depends(get_current_user)):
     """Get pending leave requests for manager approval"""
