@@ -3342,18 +3342,60 @@ const Dashboard = ({ user, onLogout, orgBranding }) => {
                       {/* Calendar days */}
                       {calendarData.days.map(day => {
                         let bgColor = 'bg-gray-50 hover:bg-gray-100';
-                        if (day.type === 'worked') bgColor = 'bg-green-100 hover:bg-green-200';
-                        else if (day.type === 'leave') bgColor = 'bg-red-100 hover:bg-red-200';
-                        else if (day.type === 'holiday') bgColor = 'bg-yellow-100 hover:bg-yellow-200';
-                        else if (day.type === 'half-day') bgColor = 'bg-orange-100 hover:bg-orange-200';
+                        let statusIcon = '';
+                        let statusText = day.details?.status || 'Available';
+                        
+                        if (day.type === 'worked') {
+                          bgColor = 'bg-green-100 hover:bg-green-200';
+                          statusIcon = '✓';
+                        } else if (day.type === 'leave') {
+                          bgColor = 'bg-red-100 hover:bg-red-200';
+                          statusIcon = '✗';
+                        } else if (day.type === 'holiday') {
+                          bgColor = 'bg-yellow-100 hover:bg-yellow-200';
+                          statusIcon = '🎉';
+                        } else if (day.type === 'half-day') {
+                          bgColor = 'bg-orange-100 hover:bg-orange-200';
+                          statusIcon = '½';
+                        }
                         
                         return (
                           <div
                             key={day.date}
-                            className={`p-3 text-center rounded-lg cursor-pointer transition-colors ${bgColor}`}
+                            className={`p-3 text-center rounded-lg cursor-pointer transition-colors ${bgColor} relative group`}
                             data-testid={`calendar-day-${day.date}`}
+                            title={statusText}
                           >
                             <span className="font-medium">{day.day}</span>
+                            {statusIcon && (
+                              <span className="text-xs absolute top-1 right-1 opacity-70">
+                                {statusIcon}
+                              </span>
+                            )}
+                            
+                            {/* Tooltip with detailed information */}
+                            {day.details && (
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 whitespace-nowrap">
+                                <div className="font-semibold">{statusText}</div>
+                                {day.details.login_time && (
+                                  <div>Login: {day.details.login_time}</div>
+                                )}
+                                {day.details.logout_time && (
+                                  <div>Logout: {day.details.logout_time}</div>
+                                )}
+                                {day.details.effective_hours && (
+                                  <div>Hours: {day.details.effective_hours}h</div>
+                                )}
+                                {day.details.holiday_name && (
+                                  <div>{day.details.holiday_name}</div>
+                                )}
+                                {day.details.reason && (
+                                  <div>Reason: {day.details.reason}</div>
+                                )}
+                                {/* Tooltip arrow */}
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
