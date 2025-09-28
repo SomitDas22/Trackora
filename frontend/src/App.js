@@ -885,9 +885,18 @@ const AdminDashboard = ({ admin, onLogout, orgBranding }) => {
       {/* Admin Header */}
       <div className="bg-slate-800 shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
-            <p className="text-slate-300">Work Hours Tracker Administration</p>
+          <div className="flex items-center space-x-3">
+            {orgBranding.company_logo && (
+              <img 
+                src={orgBranding.company_logo} 
+                alt={orgBranding.company_name} 
+                className="h-10 w-10 object-contain"
+              />
+            )}
+            <div>
+              <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
+              <p className="text-slate-300">{orgBranding.company_name} Administration</p>
+            </div>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-right">
