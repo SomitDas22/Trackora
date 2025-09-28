@@ -357,6 +357,31 @@ const Dashboard = ({ user, onLogout }) => {
 
   const getCTAButton = () => {
     if (!activeSession) {
+      // Check if user can start session today
+      if (canStartToday && !canStartToday.can_start) {
+        return (
+          <div className="space-y-4">
+            <Button
+              disabled={true}
+              className="w-full h-16 text-lg bg-gray-400 cursor-not-allowed"
+              data-testid="session-blocked-btn"
+            >
+              <UserCheck className="mr-2 h-5 w-5" />
+              Already Logged In Today
+            </Button>
+            <div className="text-center text-sm text-gray-600 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+              <p className="font-medium text-yellow-800">One Login Per Day Policy</p>
+              <p>You logged in today at {canStartToday.session_time} on {new Date(canStartToday.session_date).toLocaleDateString('en-IN')}</p>
+              {canStartToday.is_completed ? (
+                <p className="mt-1 text-green-700">✓ Session completed</p>
+              ) : (
+                <p className="mt-1 text-blue-700">Session is currently active</p>
+              )}
+            </div>
+          </div>
+        );
+      }
+      
       return (
         <Button
           onClick={startSession}
