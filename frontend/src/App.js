@@ -3516,6 +3516,7 @@ function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [orgBranding, setOrgBranding] = useState({ company_name: 'Work Hours Tracker', company_logo: '' });
 
   useEffect(() => {
     // Check for regular user token
