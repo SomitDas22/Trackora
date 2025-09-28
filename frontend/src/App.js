@@ -306,6 +306,9 @@ const AdminDashboard = ({ admin, onLogout }) => {
   const [showAdminUsersPage, setShowAdminUsersPage] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [showEditAdminModal, setShowEditAdminModal] = useState(false);
+  const [showHolidayListPage, setShowHolidayListPage] = useState(false);
+  const [editingHoliday, setEditingHoliday] = useState(null);
+  const [showEditHolidayModal, setShowEditHolidayModal] = useState(false);
 
   // Fetch all users
   const fetchUsers = async () => {
