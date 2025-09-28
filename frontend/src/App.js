@@ -1121,6 +1121,130 @@ const AdminDashboard = ({ admin, onLogout }) => {
         </div>
       )}
 
+      {/* Holiday List Management Page */}
+      {showHolidayListPage && (
+        <div className="fixed inset-0 bg-slate-800 z-50 overflow-y-auto">
+          <div className="max-w-6xl mx-auto p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Holiday List Management</h2>
+                <p className="text-slate-300">Manage all company holidays and their types</p>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => setShowHolidayModal(true)}
+                  className="bg-yellow-600 hover:bg-yellow-700"
+                  data-testid="add-holiday-page-btn"
+                >
+                  Add New Holiday
+                </Button>
+                <Button
+                  onClick={() => setShowHolidayListPage(false)}
+                  variant="outline"
+                  className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  data-testid="close-holiday-list-page"
+                >
+                  ← Back to Dashboard
+                </Button>
+              </div>
+            </div>
+
+            {/* Holiday List Table */}
+            <Card className="bg-slate-700 border-slate-600">
+              <CardHeader>
+                <CardTitle className="text-white">
+                  All Holidays ({holidaysData ? holidaysData.total_holidays : 0})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {holidaysData && holidaysData.holidays.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-600">
+                          <TableHead className="text-slate-300">Date</TableHead>
+                          <TableHead className="text-slate-300">Description</TableHead>
+                          <TableHead className="text-slate-300">Type</TableHead>
+                          <TableHead className="text-slate-300">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {holidaysData.holidays.map((holiday) => (
+                          <TableRow key={holiday.id} className="border-slate-600 hover:bg-slate-600">
+                            <TableCell className="font-medium text-white">
+                              <div className="flex items-center space-x-2">
+                                <Calendar className="h-4 w-4 text-yellow-400" />
+                                <span>{new Date(holiday.date).toLocaleDateString('en-IN', {
+                                  weekday: 'short',
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-slate-300">
+                              <div>
+                                <div className="font-medium">{holiday.name}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                className={
+                                  holiday.type === 'Mandatory' 
+                                    ? 'bg-red-600 text-red-100' 
+                                    : 'bg-blue-600 text-blue-100'
+                                }
+                              >
+                                {holiday.type}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button
+                                  onClick={() => openEditHoliday(holiday)}
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+                                  data-testid={`edit-holiday-${holiday.id}`}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  onClick={() => deleteHolidayById(holiday.id)}
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                                  data-testid={`delete-holiday-${holiday.id}`}
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Calendar className="h-16 w-16 mx-auto mb-4 opacity-50 text-slate-400" />
+                    <h3 className="text-lg font-medium text-slate-300 mb-2">No Holidays</h3>
+                    <p className="text-slate-400">Add your first company holiday to get started</p>
+                    <Button
+                      onClick={() => setShowHolidayModal(true)}
+                      className="mt-4 bg-yellow-600 hover:bg-yellow-700"
+                    >
+                      Add First Holiday
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
       {/* Create Admin Modal */}
       <Dialog open={showCreateAdminModal} onOpenChange={setShowCreateAdminModal}>
         <DialogContent className="max-w-md">
