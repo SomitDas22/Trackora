@@ -101,3 +101,162 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: Add 4 new cards to Employee Dashboard (Associated Projects, Leave Status, Apply Leave, Raise IT Ticket), implement manager leave approval workflow, add leave configuration in admin settings, and fix calendar color coding. Leave balance should be calculated quarterly with 3 types: Casual Leave, Sick Leave, Leave without Pay. IT tickets should have 6 categories and be submitted directly to IT team.
+
+backend:
+  - task: "Employee Projects API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Added GET /employee/projects endpoint to fetch employee's assigned projects with project details and manager names"
+
+  - task: "Leave Balance API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Added GET /employee/leave-balance endpoint with quarterly calculation logic for 3 leave types"
+
+  - task: "Apply Leave API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Added POST /employee/apply-leave endpoint with balance validation and manager assignment"
+
+  - task: "Leave Requests Management API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Added GET /employee/leave-requests and manager approval endpoints for leave workflow"
+
+  - task: "Manager Leave Approval API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Added GET /manager/leave-requests and PUT /manager/leave-requests/{id} for approval workflow"
+
+  - task: "IT Tickets API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Added POST /employee/it-tickets and GET /employee/it-tickets endpoints for 6 IT categories"
+
+  - task: "Admin Leave Settings API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Added GET/PUT /admin/leave-settings endpoints for quarterly leave allocation configuration"
+
+frontend:
+  - task: "Dashboard Cards UI"
+    implemented: false
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: false
+          agent: "main"
+          comment: "Need to add 4 cards (Associated Projects, Leave Status, Apply Leave, Raise IT Ticket) to Employee Dashboard"
+
+  - task: "Manager Leave Approval UI"
+    implemented: false
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: false
+          agent: "main"
+          comment: "Need to add Employee Leave Requests card for managers to approve/reject leaves"
+
+  - task: "Admin Leave Settings UI"
+    implemented: false
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+        - working: false
+          agent: "main"
+          comment: "Need to add leave configuration section in Admin Settings"
+
+  - task: "Calendar Color Coding Fix"
+    implemented: false
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+        - working: false
+          agent: "main"
+          comment: "Need to fix calendar colors: Green=worked, Red=leave, Yellow=holiday, Orange=half-day"
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Employee Projects API"
+    - "Leave Balance API"
+    - "Apply Leave API"
+    - "Leave Requests Management API"
+    - "Manager Leave Approval API"
+    - "IT Tickets API"
+    - "Admin Leave Settings API"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+    - agent: "main"
+      message: "Implemented all backend APIs for Employee Dashboard cards, Leave management system with quarterly allocation, Manager approval workflow, and IT ticket system. Ready for backend testing before proceeding with frontend implementation."
