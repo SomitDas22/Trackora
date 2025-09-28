@@ -1152,6 +1152,53 @@ const AdminDashboard = ({ admin, onLogout }) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Admin Modal */}
+      <Dialog open={showEditAdminModal} onOpenChange={setShowEditAdminModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Admin User</DialogTitle>
+          </DialogHeader>
+          {editingAdmin && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-admin-name">Full Name</Label>
+                <Input
+                  id="edit-admin-name"
+                  value={editingAdmin.name}
+                  onChange={(e) => setEditingAdmin({...editingAdmin, name: e.target.value})}
+                  placeholder="Enter admin name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-admin-email">Email</Label>
+                <Input
+                  id="edit-admin-email"
+                  type="email"
+                  value={editingAdmin.email}
+                  onChange={(e) => setEditingAdmin({...editingAdmin, email: e.target.value})}
+                  placeholder="Enter admin email"
+                />
+              </div>
+              <div className="flex space-x-2">
+                <Button onClick={updateAdmin} className="flex-1" data-testid="update-admin-submit">
+                  Update Admin
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowEditAdminModal(false);
+                    setEditingAdmin(null);
+                  }} 
+                  variant="outline" 
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
