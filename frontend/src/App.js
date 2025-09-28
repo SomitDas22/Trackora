@@ -678,6 +678,69 @@ const AdminDashboard = ({ admin, onLogout }) => {
     setShowEditEmployeeModal(true);
   };
 
+  // Create department
+  const createDepartment = async () => {
+    if (!newDepartmentData.name) {
+      alert('Please enter department name');
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/admin/create-department`, newDepartmentData);
+      setShowCreateDepartmentModal(false);
+      setNewDepartmentData({ name: '', description: '' });
+      await Promise.all([fetchDepartments(), fetchOrganizationTree()]);
+      alert('Department created successfully!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to create department');
+    }
+  };
+
+  // Create manager
+  const createManager = async () => {
+    if (!newManagerData.employee_id || !newManagerData.department_id) {
+      alert('Please select both employee and department');
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/admin/create-manager`, newManagerData);
+      setShowCreateManagerModal(false);
+      setNewManagerData({ employee_id: '', department_id: '' });
+      await Promise.all([fetchManagers(), fetchOrganizationTree()]);
+      alert('Manager assigned successfully!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to assign manager');
+    }
+  };
+
+  // Create project
+  const createProject = async () => {
+    if (!newProjectData.name || !newProjectData.department_id || !newProjectData.manager_id) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    const projectData = {
+      ...newProjectData,
+      employee_ids: selectedEmployeesForProject
+    };
+
+    try {
+      await axios.post(`${API}/admin/create-project`, projectData);
+      setShowCreateProjectModal(false);
+      setNewProjectData({
+        name: '', description: '', department_id: '', manager_id: '', employee_ids: [],
+        start_date: '', end_date: '', status: 'Active'
+      });
+      setSelectedEmployeesForProject([]);
+      await Promise.all([fetchProjects(), fetchOrganizationTree()]);
+      alert('Project created successfully!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to create project');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Admin Header */}
