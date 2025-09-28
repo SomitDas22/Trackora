@@ -658,6 +658,132 @@ async def get_dashboard_stats(
     return {"leaves_by_month": leaves_by_month}
 
 # Admin Panel routes
+@api_router.get("/admin/admin-users")
+async def get_all_admin_users(current_admin: User = Depends(get_current_admin)):
+    """Get all admin users"""
+    admins = await db.users.find({"role": "admin"}).to_list(length=None)
+    
+    admin_list = []
+    for admin_doc in admins:
+        admin_user = User(**admin_doc)
+        admin_stats = {
+            "id": admin_user.id,
+            "name": admin_user.name,
+            "email": admin_user.email,
+            "created_at": admin_user.created_at.isoformat(),
+            "status": "Active"
+        }
+        admin_list.append(admin_stats)
+    
+    return admin_list
+
+@api_router.post("/admin/create-admin")
+async def create_new_admin(admin_data: AdminCreate, current_admin: User = Depends(get_current_admin)):
+    """Create a new admin user"""
+    # Check if admin exists
+    existing_admin = await db.users.find_one({"email": admin_data.email})
+    if existing_admin:
+        raise HTTPException(status_code=400, detail="Admin with this email already exists")
+    
+    # Create admin user
+    new_admin = User(
+        name=admin_data.name,
+        email=admin_data.email,
+        phone="",
+        password_hash=hash_password(admin_data.password),
+        role="admin"
+    )
+    
+    await db.users.insert_one(new_admin.dict())
+    return {"message": "Admin created successfully", "admin_id": new_admin.id}
+
+@api_router.get("/admin/holidays-management")
+async def get_holidays_management(current_admin: User = Depends(get_current_admin)):
+    """Get all holidays for management"""
+    current_year = datetime.now().year
+    holidays = await db.holidays.find({}).sort("date", 1).to_list(length=None)
+    
+    return {
+        "total_holidays": len(holidays),
+        "holidays_this_year": len([h for h in holidays if h["date"].startswith(str(current_year))]),
+        "holidays": holidays
+    }
+
+@api_router.post("/admin/add-holiday")
+async def add_holiday(holiday_data: dict, current_admin: User = Depends(get_current_admin)):
+    """Add a new holiday"""
+    new_holiday = {
+        "id": str(uuid.uuid4()),
+        "date": holiday_data["date"],
+        "name": holiday_data["name"]
+    }
+    
+    # Check if holiday already exists for this date
+    existing = await db.holidays.find_one({"date": holiday_data["date"]})
+    if existing:
+        raise HTTPException(status_code=400, detail="Holiday already exists for this date")
+    
+    await db.holidays.insert_one(new_holiday)
+    return {"message": "Holiday added successfully", "holiday_id": new_holiday["id"]}
+
+@api_router.delete("/admin/holiday/{holiday_id}")
+async def delete_holiday(holiday_id: str, current_admin: User = Depends(get_current_admin)):
+    """Delete a holiday"""
+    result = await db.holidays.delete_one({"id": holiday_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Holiday not found")
+    
+    return {"message": "Holiday deleted successfully"}
+
+class ManagerAssignment(BaseModel):
+    manager_id: str
+    employee_ids: List[str]
+
+@api_router.get("/admin/manager-assignments")
+async def get_manager_assignments(current_admin: User = Depends(get_current_admin)):
+    """Get all manager assignments"""
+    # For now, return a simple structure. In a real system, you'd have a managers table
+    employees = await db.users.find({"role": "employee"}).to_list(length=None)
+    
+    assignments = []
+    for emp in employees:
+        assignments.append({
+            "employee_id": emp["id"],
+            "employee_name": emp["name"],
+            "employee_email": emp["email"],
+            "manager_id": emp.get("manager_id", None),
+            "manager_name": emp.get("manager_name", "Unassigned")
+        })
+    
+    return {
+        "total_employees": len(employees),
+        "assigned_employees": len([e for e in assignments if e["manager_id"]]),
+        "unassigned_employees": len([e for e in assignments if not e["manager_id"]]),
+        "assignments": assignments
+    }
+
+@api_router.post("/admin/assign-manager")
+async def assign_manager(assignment: ManagerAssignment, current_admin: User = Depends(get_current_admin)):
+    """Assign a manager to employees"""
+    # Get manager info
+    manager = await db.users.find_one({"id": assignment.manager_id})
+    if not manager:
+        raise HTTPException(status_code=404, detail="Manager not found")
+    
+    # Update employees with manager assignment
+    for emp_id in assignment.employee_ids:
+        await db.users.update_one(
+            {"id": emp_id},
+            {
+                "$set": {
+                    "manager_id": assignment.manager_id,
+                    "manager_name": manager["name"]
+                }
+            }
+        )
+    
+    return {"message": f"Manager {manager['name']} assigned to {len(assignment.employee_ids)} employees"}
+
 @api_router.get("/admin/users")
 async def get_all_users(current_admin: User = Depends(get_current_admin)):
     """Get all users for admin panel"""
