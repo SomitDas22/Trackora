@@ -701,7 +701,16 @@ async def create_new_admin(admin_data: AdminCreate, current_admin: User = Depend
 async def get_holidays_management(current_admin: User = Depends(get_current_admin)):
     """Get all holidays for management"""
     current_year = datetime.now().year
-    holidays = await db.holidays.find({}).sort("date", 1).to_list(length=None)
+    holidays_docs = await db.holidays.find({}, {"_id": 0}).sort("date", 1).to_list(length=None)
+    
+    # Clean holidays data
+    holidays = []
+    for h in holidays_docs:
+        holidays.append({
+            "id": h.get("id", ""),
+            "name": h.get("name", ""),
+            "date": h.get("date", "")
+        })
     
     return {
         "total_holidays": len(holidays),
