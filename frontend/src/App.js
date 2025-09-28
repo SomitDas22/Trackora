@@ -3098,9 +3098,18 @@ const Dashboard = ({ user, onLogout, orgBranding }) => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Work Hours Tracker</h1>
-            <p className="text-gray-600">Welcome back, {user.name}</p>
+          <div className="flex items-center space-x-3">
+            {orgBranding.company_logo && (
+              <img 
+                src={orgBranding.company_logo} 
+                alt={orgBranding.company_name} 
+                className="h-10 w-10 object-contain"
+              />
+            )}
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">{orgBranding.company_name}</h1>
+              <p className="text-gray-600">Welcome back, {user.name}</p>
+            </div>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-right">
