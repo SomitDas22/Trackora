@@ -201,18 +201,25 @@ async def get_me(current_user: User = Depends(get_current_user)):
 # Session routes
 @api_router.post("/sessions/start", response_model=WorkSession)
 async def start_session(current_user: User = Depends(get_current_user)):
-    # Check if user already has an active session
-    active_session = await db.sessions.find_one({
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    # Check if user already has ANY session for today (active or completed)
+    existing_session = await db.sessions.find_one({
         "user_id": current_user.id,
-        "end_time": None
+        "start_time": {"$gte": today_start, "$lte": today_end}
     })
     
-    if active_session:
-        raise HTTPException(status_code=409, detail="Active session already exists")
+    if existing_session:
+        if existing_session.get("end_time") is None:
+            raise HTTPException(status_code=409, detail="You already have an active session for today")
+        else:
+            raise HTTPException(status_code=409, detail="You have already logged in today. Only one login per day is allowed.")
     
     session = WorkSession(
         user_id=current_user.id,
-        start_time=datetime.now(timezone.utc)
+        start_time=now
     )
     
     await db.sessions.insert_one(session.dict())
