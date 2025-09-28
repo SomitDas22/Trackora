@@ -20,7 +20,7 @@ const API = `${BACKEND_URL}/api`;
 // Configure axios defaults
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
-const AuthPage = ({ onLogin }) => {
+const AuthPage = ({ onLogin, orgBranding }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
