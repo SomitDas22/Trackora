@@ -3310,22 +3310,26 @@ const Dashboard = ({ user, onLogout, orgBranding }) => {
                           year: 'numeric' 
                         })}
                       </h3>
-                      <div className="flex gap-4 text-sm">
-                        <div className="flex items-center gap-1">
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        <div className="flex items-center gap-1" title={calendarData.legend?.worked || "Full Day Worked"}>
                           <div className="w-3 h-3 bg-green-500 rounded"></div>
-                          <span>Worked</span>
+                          <span>✓ Worked</span>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1" title={calendarData.legend?.leave || "Full Day Leave"}>
                           <div className="w-3 h-3 bg-red-500 rounded"></div>
-                          <span>Leave</span>
+                          <span>✗ Leave</span>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1" title={calendarData.legend?.holiday || "Mandatory Holiday"}>
                           <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                          <span>Holiday</span>
+                          <span>🎉 Holiday</span>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1" title={calendarData.legend?.['half-day'] || "Half Day Worked/Leave"}>
                           <div className="w-3 h-3 bg-orange-500 rounded"></div>
-                          <span>Half Day</span>
+                          <span>½ Half Day</span>
+                        </div>
+                        <div className="flex items-center gap-1" title={calendarData.legend?.available || "Available Day"}>
+                          <div className="w-3 h-3 bg-gray-300 rounded"></div>
+                          <span>Available</span>
                         </div>
                       </div>
                     </div>
