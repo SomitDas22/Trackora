@@ -1347,6 +1347,166 @@ const AdminDashboard = ({ admin, onLogout }) => {
               </Card>
             )}
           </TabsContent>
+
+          {/* Organization Settings Tab */}
+          <TabsContent value="settings" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <UserCheck className="h-6 w-6" />
+                  Organization Settings
+                </CardTitle>
+                <p className="text-gray-600">Manage your organization details and branding</p>
+              </CardHeader>
+              <CardContent>
+                {organizationSettings && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Company Information */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-700">Company Information</h3>
+                      <div>
+                        <Label htmlFor="org-company-name">Company Name *</Label>
+                        <Input
+                          id="org-company-name"
+                          value={orgSettingsData.company_name}
+                          onChange={(e) => setOrgSettingsData({...orgSettingsData, company_name: e.target.value})}
+                          placeholder="Enter company name"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="org-establishment-date">Establishment Date</Label>
+                        <Input
+                          id="org-establishment-date"
+                          type="date"
+                          value={orgSettingsData.establishment_date}
+                          onChange={(e) => setOrgSettingsData({...orgSettingsData, establishment_date: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="org-company-email">Company Email</Label>
+                        <Input
+                          id="org-company-email"
+                          type="email"
+                          value={orgSettingsData.company_email}
+                          onChange={(e) => setOrgSettingsData({...orgSettingsData, company_email: e.target.value})}
+                          placeholder="info@company.com"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="org-phone">Phone Number</Label>
+                        <Input
+                          id="org-phone"
+                          value={orgSettingsData.phone}
+                          onChange={(e) => setOrgSettingsData({...orgSettingsData, phone: e.target.value})}
+                          placeholder="+1 (555) 123-4567"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="org-website">Website</Label>
+                        <Input
+                          id="org-website"
+                          value={orgSettingsData.website}
+                          onChange={(e) => setOrgSettingsData({...orgSettingsData, website: e.target.value})}
+                          placeholder="https://www.company.com"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Founder & Contact Information */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-700">Founder & Contact</h3>
+                      <div>
+                        <Label htmlFor="org-founder-name">Founder Name</Label>
+                        <Input
+                          id="org-founder-name"
+                          value={orgSettingsData.founder_name}
+                          onChange={(e) => setOrgSettingsData({...orgSettingsData, founder_name: e.target.value})}
+                          placeholder="John Doe"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="org-founder-email">Founder Email</Label>
+                        <Input
+                          id="org-founder-email"
+                          type="email"
+                          value={orgSettingsData.founder_email}
+                          onChange={(e) => setOrgSettingsData({...orgSettingsData, founder_email: e.target.value})}
+                          placeholder="founder@company.com"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="org-address">Company Address</Label>
+                        <Textarea
+                          id="org-address"
+                          value={orgSettingsData.address}
+                          onChange={(e) => setOrgSettingsData({...orgSettingsData, address: e.target.value})}
+                          placeholder="123 Business Street, City, State 12345"
+                          rows={3}
+                        />
+                      </div>
+                      
+                      {/* Company Logo Section */}
+                      <div>
+                        <Label>Company Logo</Label>
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                          {organizationSettings.company_logo ? (
+                            <div className="space-y-2">
+                              <img 
+                                src={organizationSettings.company_logo} 
+                                alt="Company Logo" 
+                                className="mx-auto h-16 w-16 object-contain"
+                              />
+                              <p className="text-sm text-gray-600">Current Logo</p>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <div className="mx-auto h-16 w-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <UserCheck className="h-8 w-8 text-gray-400" />
+                              </div>
+                              <p className="text-sm text-gray-600">No logo uploaded</p>
+                            </div>
+                          )}
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-2"
+                            onClick={() => alert('Logo upload feature will be implemented with file handling')}
+                          >
+                            Upload Logo
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex justify-end space-x-2 mt-6 pt-6 border-t">
+                  <Button 
+                    onClick={updateOrganizationSettings}
+                    className="bg-blue-600 hover:bg-blue-700"
+                    data-testid="update-org-settings"
+                  >
+                    Save Changes
+                  </Button>
+                  <Button 
+                    onClick={() => setOrgSettingsData({
+                      company_name: organizationSettings?.company_name || '',
+                      establishment_date: organizationSettings?.establishment_date || '',
+                      company_email: organizationSettings?.company_email || '',
+                      founder_name: organizationSettings?.founder_name || '',
+                      founder_email: organizationSettings?.founder_email || '',
+                      address: organizationSettings?.address || '',
+                      phone: organizationSettings?.phone || '',
+                      website: organizationSettings?.website || ''
+                    })}
+                    variant="outline"
+                  >
+                    Reset
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
