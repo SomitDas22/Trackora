@@ -747,6 +747,27 @@ async def add_holiday(holiday_data: HolidayCreate, current_admin: User = Depends
     await db.holidays.insert_one(new_holiday)
     return {"message": "Holiday added successfully", "holiday_id": new_holiday["id"]}
 
+@api_router.put("/admin/update-holiday/{holiday_id}")
+async def update_holiday(holiday_id: str, holiday_data: HolidayUpdate, current_admin: User = Depends(get_current_admin)):
+    """Update a holiday"""
+    # Check if holiday exists
+    existing_holiday = await db.holidays.find_one({"id": holiday_id})
+    if not existing_holiday:
+        raise HTTPException(status_code=404, detail="Holiday not found")
+    
+    # Check if date is already taken by another holiday
+    date_check = await db.holidays.find_one({"date": holiday_data.date, "id": {"$ne": holiday_id}})
+    if date_check:
+        raise HTTPException(status_code=400, detail="Another holiday already exists for this date")
+    
+    # Update holiday
+    await db.holidays.update_one(
+        {"id": holiday_id},
+        {"$set": {"name": holiday_data.name, "date": holiday_data.date, "type": holiday_data.type}}
+    )
+    
+    return {"message": "Holiday updated successfully"}
+
 @api_router.delete("/admin/holiday/{holiday_id}")
 async def delete_holiday(holiday_id: str, current_admin: User = Depends(get_current_admin)):
     """Delete a holiday"""
