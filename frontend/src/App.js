@@ -562,10 +562,12 @@ const AdminDashboard = ({ admin, onLogout }) => {
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-purple-100">Sessions This Month</p>
-                          <p className="text-3xl font-bold">{adminStats.sessions_this_month}</p>
+                          <p className="text-purple-100">Users on Leave</p>
+                          <p className="text-3xl font-bold">
+                            {usersOnLeave ? usersOnLeave.users_on_leave_today : 0}
+                          </p>
                         </div>
-                        <Calendar className="h-8 w-8 text-purple-200" />
+                        <UserCheck className="h-8 w-8 text-purple-200" />
                       </div>
                     </CardContent>
                   </Card>
