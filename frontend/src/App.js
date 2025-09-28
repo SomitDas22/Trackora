@@ -886,6 +886,91 @@ const AdminDashboard = ({ admin, onLogout }) => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Create Admin Modal */}
+      <Dialog open={showCreateAdminModal} onOpenChange={setShowCreateAdminModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Admin</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="admin-name">Full Name</Label>
+              <Input
+                id="admin-name"
+                value={newAdminData.name}
+                onChange={(e) => setNewAdminData({...newAdminData, name: e.target.value})}
+                placeholder="Enter admin name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="admin-email-create">Email</Label>
+              <Input
+                id="admin-email-create"
+                type="email"
+                value={newAdminData.email}
+                onChange={(e) => setNewAdminData({...newAdminData, email: e.target.value})}
+                placeholder="Enter admin email"
+              />
+            </div>
+            <div>
+              <Label htmlFor="admin-password-create">Password</Label>
+              <Input
+                id="admin-password-create"
+                type="password"
+                value={newAdminData.password}
+                onChange={(e) => setNewAdminData({...newAdminData, password: e.target.value})}
+                placeholder="Enter admin password"
+              />
+            </div>
+            <div className="flex space-x-2">
+              <Button onClick={createNewAdmin} className="flex-1" data-testid="create-admin-submit">
+                Create Admin
+              </Button>
+              <Button onClick={() => setShowCreateAdminModal(false)} variant="outline" className="flex-1">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Holiday Modal */}
+      <Dialog open={showHolidayModal} onOpenChange={setShowHolidayModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Holiday</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="holiday-name">Holiday Name</Label>
+              <Input
+                id="holiday-name"
+                value={newHolidayData.name}
+                onChange={(e) => setNewHolidayData({...newHolidayData, name: e.target.value})}
+                placeholder="e.g., Christmas Day"
+              />
+            </div>
+            <div>
+              <Label htmlFor="holiday-date">Date</Label>
+              <Input
+                id="holiday-date"
+                type="date"
+                value={newHolidayData.date}
+                onChange={(e) => setNewHolidayData({...newHolidayData, date: e.target.value})}
+              />
+            </div>
+            <div className="flex space-x-2">
+              <Button onClick={addNewHoliday} className="flex-1" data-testid="add-holiday-submit">
+                Add Holiday
+              </Button>
+              <Button onClick={() => setShowHolidayModal(false)} variant="outline" className="flex-1">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
