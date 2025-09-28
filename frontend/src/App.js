@@ -384,7 +384,7 @@ const AdminLoginPage = ({ onAdminLogin, orgBranding }) => {
   );
 };
 
-const AdminDashboard = ({ admin, onLogout }) => {
+const AdminDashboard = ({ admin, onLogout, orgBranding }) => {
   const [users, setUsers] = useState([]);
   const [adminStats, setAdminStats] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
