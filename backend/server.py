@@ -617,7 +617,7 @@ async def get_calendar_month(
     month: int,
     current_user: User = Depends(get_current_user)
 ):
-    """Get calendar data for a specific month"""
+    """Get calendar data for a specific month with correct status colors"""
     from calendar import monthrange
     import calendar as cal
     
@@ -626,14 +626,14 @@ async def get_calendar_month(
     last_day_num = monthrange(year, month)[1]
     last_day = datetime(year, month, last_day_num, 23, 59, 59, tzinfo=timezone.utc)
     
-    # Get all sessions for the month
+    # Get all sessions for the month for this user
     sessions = await db.sessions.find({
         "user_id": current_user.id,
         "start_time": {"$gte": first_day, "$lte": last_day},
         "end_time": {"$ne": None}
     }).to_list(length=None)
     
-    # Get all leaves for the month
+    # Get all leaves for the month for this user
     leaves = await db.leaves.find({
         "user_id": current_user.id,
         "date": {
@@ -642,47 +642,98 @@ async def get_calendar_month(
         }
     }).to_list(length=None)
     
-    # Get holidays for the month
+    # Get mandatory holidays for the month
     holidays = await db.holidays.find({
         "date": {
             "$gte": first_day.date().isoformat(),
             "$lte": last_day.date().isoformat()
-        }
+        },
+        "type": "Mandatory"
     }).to_list(length=None)
     
-    # Build calendar data
+    # Build calendar data with priority logic
     calendar_days = []
     for day in range(1, last_day_num + 1):
         date_str = f"{year}-{month:02d}-{day:02d}"
-        
-        # Check what type of day this is
         day_type = None
+        detail_info = {}
         
-        # Check if it's a holiday
-        if any(h["date"] == date_str for h in holidays):
-            day_type = "holiday"
+        # Priority 1: Check if user worked (Green) or had half-day (Orange)
+        user_session = None
+        for session in sessions:
+            if session["start_time"].date().isoformat() == date_str:
+                user_session = session
+                break
         
-        # Check if user worked
-        elif any(s["start_time"].date().isoformat() == date_str for s in sessions):
-            session = next(s for s in sessions if s["start_time"].date().isoformat() == date_str)
-            day_type = "half-day" if session.get("is_half_day") else "worked"
+        if user_session:
+            if user_session.get("is_half_day"):
+                day_type = "half-day"  # Orange
+                detail_info = {
+                    "login_time": user_session["start_time"].strftime("%H:%M"),
+                    "logout_time": user_session.get("end_time", "").strftime("%H:%M") if user_session.get("end_time") else "",
+                    "effective_hours": round(user_session.get("effective_seconds", 0) / 3600, 2),
+                    "status": "Half Day Worked"
+                }
+            else:
+                day_type = "worked"  # Green
+                detail_info = {
+                    "login_time": user_session["start_time"].strftime("%H:%M"),
+                    "logout_time": user_session.get("end_time", "").strftime("%H:%M") if user_session.get("end_time") else "",
+                    "effective_hours": round(user_session.get("effective_seconds", 0) / 3600, 2),
+                    "status": "Full Day Worked"
+                }
         
-        # Check if user was on leave
+        # Priority 2: Check if user was on leave (Red)
         elif any(l["date"] == date_str for l in leaves):
             leave = next(l for l in leaves if l["date"] == date_str)
-            day_type = "half-day" if leave["type"] == "half" else "leave"
+            if leave["type"] == "half":
+                day_type = "half-day"  # Orange (but this case should be covered above if there's a session)
+                detail_info = {
+                    "status": "Half Day Leave",
+                    "reason": leave.get("reason", "Half day application")
+                }
+            else:
+                day_type = "leave"  # Red
+                detail_info = {
+                    "status": "Full Day Leave",
+                    "reason": leave.get("reason", "Leave application")
+                }
+        
+        # Priority 3: Check if it's a mandatory holiday (Yellow)
+        elif any(h["date"] == date_str and h.get("type") == "Mandatory" for h in holidays):
+            holiday = next(h for h in holidays if h["date"] == date_str)
+            day_type = "holiday"  # Yellow
+            detail_info = {
+                "status": "Mandatory Holiday",
+                "holiday_name": holiday["name"]
+            }
+        
+        # Priority 4: Regular working day (no special status)
+        else:
+            day_type = None
+            detail_info = {
+                "status": "Available"
+            }
         
         calendar_days.append({
             "date": date_str,
             "day": day,
             "type": day_type,
-            "weekday": cal.weekday(year, month, day)
+            "weekday": cal.weekday(year, month, day),
+            "details": detail_info
         })
     
     return {
         "year": year,
         "month": month,
-        "days": calendar_days
+        "days": calendar_days,
+        "legend": {
+            "worked": "Green - Full Day Worked",
+            "half-day": "Orange - Half Day Worked/Leave",
+            "leave": "Red - Full Day Leave",
+            "holiday": "Yellow - Mandatory Holiday",
+            "available": "No Color - Available Day"
+        }
     }
 
 @api_router.get("/holidays")
