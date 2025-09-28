@@ -240,6 +240,16 @@ const Dashboard = ({ user, onLogout }) => {
     }
   };
 
+  // Check if user can start session today
+  const checkCanStartToday = async () => {
+    try {
+      const response = await axios.get(`${API}/sessions/can-start-today`);
+      setCanStartToday(response.data);
+    } catch (err) {
+      console.error('Error checking session availability:', err);
+    }
+  };
+
   // Fetch session on mount and periodically
   useEffect(() => {
     fetchActiveSession();
