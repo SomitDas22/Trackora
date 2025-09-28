@@ -891,7 +891,7 @@ const AdminDashboard = ({ admin, onLogout }) => {
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Navigation Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="overview" className="flex items-center gap-2" data-testid="admin-overview-tab">
               <BarChart3 className="h-4 w-4" />
               Overview
@@ -903,6 +903,10 @@ const AdminDashboard = ({ admin, onLogout }) => {
             <TabsTrigger value="sessions" className="flex items-center gap-2" data-testid="admin-sessions-tab">
               <Clock className="h-4 w-4" />
               Sessions
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2" data-testid="admin-settings-tab">
+              <UserCheck className="h-4 w-4" />
+              Settings
             </TabsTrigger>
           </TabsList>
 
