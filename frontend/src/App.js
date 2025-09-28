@@ -529,6 +529,145 @@ const AdminDashboard = ({ admin, onLogout }) => {
                   </Card>
                 </div>
 
+                {/* New Management Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Admin Users Card */}
+                  <Card className="hover:shadow-lg transition-shadow">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-lg font-semibold">Admin Users</CardTitle>
+                      <Button
+                        onClick={() => setShowCreateAdminModal(true)}
+                        size="sm"
+                        className="bg-slate-600 hover:bg-slate-700"
+                        data-testid="create-admin-btn"
+                      >
+                        Add Admin
+                      </Button>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl font-bold text-slate-700">{adminUsers.length}</span>
+                          <UserCheck className="h-6 w-6 text-slate-500" />
+                        </div>
+                        <div className="space-y-1 max-h-24 overflow-y-auto">
+                          {adminUsers.slice(0, 3).map(admin => (
+                            <div key={admin.id} className="text-xs text-gray-600 flex items-center gap-1">
+                              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                              {admin.name}
+                            </div>
+                          ))}
+                          {adminUsers.length > 3 && (
+                            <div className="text-xs text-gray-500">+{adminUsers.length - 3} more</div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Employees Card */}
+                  <Card className="hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg font-semibold">Employees</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl font-bold text-blue-700">{users.length}</span>
+                          <UserCheck className="h-6 w-6 text-blue-500" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="bg-green-50 p-1 rounded text-center">
+                            <div className="font-medium text-green-700">{users.filter(u => u.total_sessions > 0).length}</div>
+                            <div className="text-green-600">Active</div>
+                          </div>
+                          <div className="bg-gray-50 p-1 rounded text-center">
+                            <div className="font-medium text-gray-700">{users.filter(u => u.total_sessions === 0).length}</div>
+                            <div className="text-gray-600">New</div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Holiday List Card */}
+                  <Card className="hover:shadow-lg transition-shadow">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-lg font-semibold">Holiday List</CardTitle>
+                      <Button
+                        onClick={() => setShowHolidayModal(true)}
+                        size="sm"
+                        className="bg-yellow-600 hover:bg-yellow-700"
+                        data-testid="add-holiday-btn"
+                      >
+                        Add Holiday
+                      </Button>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl font-bold text-yellow-700">
+                            {holidaysData ? holidaysData.holidays_this_year : 0}
+                          </span>
+                          <Calendar className="h-6 w-6 text-yellow-500" />
+                        </div>
+                        <div className="space-y-1 max-h-24 overflow-y-auto">
+                          {holidaysData && holidaysData.holidays.slice(0, 3).map(holiday => (
+                            <div key={holiday.id} className="text-xs text-gray-600 flex items-center justify-between">
+                              <div className="flex items-center gap-1">
+                                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                                {holiday.name}
+                              </div>
+                              <span className="text-gray-500">{new Date(holiday.date).toLocaleDateString()}</span>
+                            </div>
+                          ))}
+                          {holidaysData && holidaysData.holidays.length > 3 && (
+                            <div className="text-xs text-gray-500">+{holidaysData.holidays.length - 3} more</div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Assign Manager Card */}
+                  <Card className="hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg font-semibold">Manager Assignments</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl font-bold text-indigo-700">
+                            {managerAssignments ? managerAssignments.assigned_employees : 0}
+                          </span>
+                          <UserCheck className="h-6 w-6 text-indigo-500" />
+                        </div>
+                        {managerAssignments && (
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-indigo-50 p-1 rounded text-center">
+                              <div className="font-medium text-indigo-700">{managerAssignments.assigned_employees}</div>
+                              <div className="text-indigo-600">Assigned</div>
+                            </div>
+                            <div className="bg-red-50 p-1 rounded text-center">
+                              <div className="font-medium text-red-700">{managerAssignments.unassigned_employees}</div>
+                              <div className="text-red-600">Unassigned</div>
+                            </div>
+                          </div>
+                        )}
+                        <Button
+                          onClick={() => setActiveTab('manager')}
+                          size="sm"
+                          variant="outline"
+                          className="w-full text-xs"
+                          data-testid="manage-assignments-btn"
+                        >
+                          Manage Assignments
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
                 {/* Recent Sessions */}
                 <Card>
                   <CardHeader>
