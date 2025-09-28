@@ -212,15 +212,18 @@ backend:
 
   - task: "Logo Upload API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Added POST /admin/upload-logo-base64 and DELETE /admin/remove-logo endpoints with base64 image handling, file validation (PNG/JPEG, 5MB max), and organization settings integration"
+        - working: true
+          agent: "testing"
+          comment: "All logo upload APIs working correctly: POST /admin/upload-logo-base64 successfully handles valid PNG/JPEG base64 uploads with proper validation (file type, size limit 5MB, data format). DELETE /admin/remove-logo successfully removes logos. Organization settings integration verified - uploaded logos appear in GET /admin/organization-settings response. Authentication properly enforced (admin-only access). File validation working: rejects invalid base64, missing data, and oversized files. All test scenarios passed successfully."
 
 frontend:
   - task: "Dashboard Cards UI"
