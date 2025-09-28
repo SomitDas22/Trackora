@@ -1923,31 +1923,67 @@ const AdminDashboard = ({ admin, onLogout, orgBranding }) => {
                       <div>
                         <Label>Company Logo</Label>
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                          {organizationSettings.company_logo ? (
+                          {logoPreview || organizationSettings.company_logo ? (
                             <div className="space-y-2">
                               <img 
-                                src={organizationSettings.company_logo} 
+                                src={logoPreview || organizationSettings.company_logo} 
                                 alt="Company Logo" 
-                                className="mx-auto h-16 w-16 object-contain"
+                                className="mx-auto h-20 w-20 object-contain rounded-lg"
                               />
-                              <p className="text-sm text-gray-600">Current Logo</p>
+                              <p className="text-sm text-gray-600">
+                                {logoPreview ? 'Preview' : 'Current Logo'}
+                              </p>
                             </div>
                           ) : (
                             <div className="space-y-2">
-                              <div className="mx-auto h-16 w-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                                <UserCheck className="h-8 w-8 text-gray-400" />
+                              <div className="mx-auto h-20 w-20 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <UserCheck className="h-10 w-10 text-gray-400" />
                               </div>
                               <p className="text-sm text-gray-600">No logo uploaded</p>
                             </div>
                           )}
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="mt-2"
-                            onClick={() => alert('Logo upload feature will be implemented with file handling')}
-                          >
-                            Upload Logo
-                          </Button>
+                          
+                          <div className="flex flex-col space-y-2 mt-3">
+                            {/* Upload Button */}
+                            <div className="relative">
+                              <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/jpg"
+                                onChange={handleLogoUpload}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                id="logo-upload"
+                                disabled={logoUploading}
+                              />
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full"
+                                disabled={logoUploading}
+                                asChild
+                              >
+                                <label htmlFor="logo-upload" className="cursor-pointer">
+                                  {logoUploading ? 'Uploading...' : 'Upload Logo'}
+                                </label>
+                              </Button>
+                            </div>
+                            
+                            {/* Remove Button */}
+                            {(organizationSettings.company_logo || logoPreview) && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={removeLogo}
+                                disabled={logoUploading}
+                              >
+                                Remove Logo
+                              </Button>
+                            )}
+                            
+                            <p className="text-xs text-gray-500 mt-2">
+                              PNG or JPEG, max 5MB
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
