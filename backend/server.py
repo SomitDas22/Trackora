@@ -657,6 +657,125 @@ async def get_dashboard_stats(
     
     return {"leaves_by_month": leaves_by_month}
 
+# Admin Panel routes
+@api_router.get("/admin/users")
+async def get_all_users(current_admin: User = Depends(get_current_admin)):
+    """Get all users for admin panel"""
+    users = await db.users.find({"role": "employee"}).to_list(length=None)
+    
+    user_list = []
+    for user_doc in users:
+        user = User(**user_doc)
+        
+        # Get user's session stats
+        total_sessions = await db.sessions.count_documents({"user_id": user.id, "end_time": {"$ne": None}})
+        total_leaves = await db.leaves.count_documents({"user_id": user.id})
+        
+        # Get recent session
+        recent_session = await db.sessions.find_one(
+            {"user_id": user.id, "end_time": {"$ne": None}},
+            sort=[("start_time", -1)]
+        )
+        
+        user_stats = {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "phone": user.phone,
+            "created_at": user.created_at.isoformat(),
+            "total_sessions": total_sessions,
+            "total_leaves": total_leaves,
+            "last_login": recent_session["start_time"].isoformat() if recent_session else None,
+            "status": "Active"
+        }
+        user_list.append(user_stats)
+    
+    return user_list
+
+@api_router.get("/admin/dashboard-stats")
+async def get_admin_dashboard_stats(current_admin: User = Depends(get_current_admin)):
+    """Get admin dashboard statistics"""
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Total users
+    total_users = await db.users.count_documents({"role": "employee"})
+    
+    # Active users today (users who started a session today)
+    active_today = await db.sessions.count_documents({
+        "start_time": {"$gte": today_start}
+    })
+    
+    # Total sessions this month
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    sessions_this_month = await db.sessions.count_documents({
+        "start_time": {"$gte": month_start},
+        "end_time": {"$ne": None}
+    })
+    
+    # Total leaves this month
+    leaves_this_month = await db.leaves.count_documents({
+        "date": {"$gte": month_start.date().isoformat()}
+    })
+    
+    # Recent sessions
+    recent_sessions = await db.sessions.find(
+        {"end_time": {"$ne": None}},
+        sort=[("start_time", -1)],
+        limit=5
+    ).to_list(length=5)
+    
+    recent_list = []
+    for session in recent_sessions:
+        user = await db.users.find_one({"id": session["user_id"]})
+        if user:
+            recent_list.append({
+                "user_name": user["name"],
+                "user_email": user["email"],
+                "date": session["start_time"].date().isoformat(),
+                "login_time": session["start_time"].strftime("%H:%M:%S"),
+                "logout_time": session["end_time"].strftime("%H:%M:%S") if session.get("end_time") else None,
+                "effective_hours": round(session.get("effective_seconds", 0) / 3600, 2),
+                "day_type": "Half Day" if session.get("is_half_day") else "Full Day"
+            })
+    
+    return {
+        "total_users": total_users,
+        "active_today": active_today,
+        "sessions_this_month": sessions_this_month,
+        "leaves_this_month": leaves_this_month,
+        "recent_sessions": recent_list
+    }
+
+@api_router.get("/admin/user/{user_id}/sessions")
+async def get_user_sessions(user_id: str, current_admin: User = Depends(get_current_admin)):
+    """Get all sessions for a specific user"""
+    sessions = await db.sessions.find(
+        {"user_id": user_id, "end_time": {"$ne": None}},
+        sort=[("start_time", -1)]
+    ).to_list(length=None)
+    
+    session_list = []
+    for session_doc in sessions:
+        breaks = await db.breaks.find({"session_id": session_doc["id"]}).to_list(length=None)
+        break_count = len(breaks)
+        
+        timesheet = await db.timesheets.find_one({"session_id": session_doc["id"]})
+        
+        session_list.append({
+            "id": session_doc["id"],
+            "date": session_doc["start_time"].date().isoformat(),
+            "login_time": session_doc["start_time"].strftime("%H:%M:%S"),
+            "logout_time": session_doc["end_time"].strftime("%H:%M:%S") if session_doc.get("end_time") else None,
+            "effective_hours": round(session_doc.get("effective_seconds", 0) / 3600, 2),
+            "break_count": break_count,
+            "day_type": "Half Day" if session_doc.get("is_half_day") else "Full Day",
+            "task_id": timesheet.get("task_id") if timesheet else None,
+            "work_description": timesheet.get("work_description") if timesheet else None
+        })
+    
+    return session_list
+
 # Half day route
 @api_router.post("/leaves/half-day")
 async def apply_half_day(
