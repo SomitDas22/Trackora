@@ -970,7 +970,11 @@ const AdminDashboard = ({ admin, onLogout }) => {
                   </Card>
 
                   {/* Assign Manager Card */}
-                  <Card className="hover:shadow-lg transition-shadow">
+                  <Card 
+                    className="hover:shadow-lg transition-shadow cursor-pointer hover:bg-gray-50"
+                    onClick={() => setShowManagerAssignmentPage(true)}
+                    data-testid="manager-assignments-card"
+                  >
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg font-semibold">Manager Assignments</CardTitle>
                     </CardHeader>
@@ -978,31 +982,25 @@ const AdminDashboard = ({ admin, onLogout }) => {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-2xl font-bold text-indigo-700">
-                            {managerAssignments ? managerAssignments.assigned_employees : 0}
+                            {organizationTree ? organizationTree.summary.managers : 0}
                           </span>
                           <UserCheck className="h-6 w-6 text-indigo-500" />
                         </div>
-                        {managerAssignments && (
+                        {organizationTree && (
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div className="bg-indigo-50 p-1 rounded text-center">
-                              <div className="font-medium text-indigo-700">{managerAssignments.assigned_employees}</div>
-                              <div className="text-indigo-600">Assigned</div>
+                              <div className="font-medium text-indigo-700">{organizationTree.summary.departments}</div>
+                              <div className="text-indigo-600">Departments</div>
                             </div>
-                            <div className="bg-red-50 p-1 rounded text-center">
-                              <div className="font-medium text-red-700">{managerAssignments.unassigned_employees}</div>
-                              <div className="text-red-600">Unassigned</div>
+                            <div className="bg-green-50 p-1 rounded text-center">
+                              <div className="font-medium text-green-700">{organizationTree.summary.projects}</div>
+                              <div className="text-green-600">Projects</div>
                             </div>
                           </div>
                         )}
-                        <Button
-                          onClick={() => setActiveTab('manager')}
-                          size="sm"
-                          variant="outline"
-                          className="w-full text-xs"
-                          data-testid="manage-assignments-btn"
-                        >
-                          Manage Assignments
-                        </Button>
+                        <div className="text-xs text-blue-600 font-medium pt-1">
+                          Click to manage →
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
