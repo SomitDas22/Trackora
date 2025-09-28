@@ -280,6 +280,18 @@ frontend:
           agent: "main"
           comment: "Calendar color coding is already correct: Green=worked, Red=leave, Yellow=holiday, Orange=half-day"
 
+  - task: "Logo Upload UI"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Added logo upload functionality to Organization Settings page with file picker, preview, validation (PNG/JPEG, 5MB max), upload/remove buttons, and integration with backend API"
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
