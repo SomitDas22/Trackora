@@ -210,6 +210,18 @@ backend:
           agent: "testing"
           comment: "API working correctly. GET returns current settings, PUT updates settings successfully with verification. Admin authentication properly enforced."
 
+  - task: "Logo Upload API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Added POST /admin/upload-logo-base64 and DELETE /admin/remove-logo endpoints with base64 image handling, file validation (PNG/JPEG, 5MB max), and organization settings integration"
+
 frontend:
   - task: "Dashboard Cards UI"
     implemented: true
