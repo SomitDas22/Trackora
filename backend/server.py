@@ -698,12 +698,13 @@ async def get_calendar_month(
                     "reason": leave.get("reason", "Leave application")
                 }
         
-        # Priority 3: Check if it's a mandatory holiday (Yellow)
-        elif any(h["date"] == date_str and h.get("type") == "Mandatory" for h in holidays):
+        # Priority 3: Check if it's a holiday (Yellow) - prioritize mandatory holidays
+        elif any(h["date"] == date_str for h in holidays):
             holiday = next(h for h in holidays if h["date"] == date_str)
+            holiday_type = holiday.get("type", "Mandatory")  # Default to Mandatory for backward compatibility
             day_type = "holiday"  # Yellow
             detail_info = {
-                "status": "Mandatory Holiday",
+                "status": f"{holiday_type} Holiday",
                 "holiday_name": holiday["name"]
             }
         
