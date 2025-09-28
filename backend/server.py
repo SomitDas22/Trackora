@@ -249,10 +249,19 @@ async def end_session(
     
     # End session
     now = datetime.now(timezone.utc)
-    total_break_seconds = sum([
-        (b.get('end_time', now) - b['start_time']).total_seconds() 
-        for b in breaks
-    ])
+    total_break_seconds = 0
+    for b in breaks:
+        break_start = b['start_time']
+        if break_start.tzinfo is None:
+            break_start = break_start.replace(tzinfo=timezone.utc)
+        
+        break_end = b.get('end_time', now)
+        if break_end and break_end.tzinfo is None:
+            break_end = break_end.replace(tzinfo=timezone.utc)
+        elif break_end is None:
+            break_end = now
+        
+        total_break_seconds += (break_end - break_start).total_seconds()
     
     await db.sessions.update_one(
         {"id": session.id},
@@ -398,10 +407,19 @@ async def apply_half_day(
     now = datetime.now(timezone.utc)
     breaks = await db.breaks.find({"session_id": session.id}).to_list(length=None)
     effective_seconds = calculate_effective_seconds(session.start_time, breaks)
-    total_break_seconds = sum([
-        (b.get('end_time', now) - b['start_time']).total_seconds() 
-        for b in breaks
-    ])
+    total_break_seconds = 0
+    for b in breaks:
+        break_start = b['start_time']
+        if break_start.tzinfo is None:
+            break_start = break_start.replace(tzinfo=timezone.utc)
+        
+        break_end = b.get('end_time', now)
+        if break_end and break_end.tzinfo is None:
+            break_end = break_end.replace(tzinfo=timezone.utc)
+        elif break_end is None:
+            break_end = now
+        
+        total_break_seconds += (break_end - break_start).total_seconds()
     
     await db.sessions.update_one(
         {"id": session.id},
