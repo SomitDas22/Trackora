@@ -2026,6 +2026,24 @@ async def approve_reject_leave(
             }
             await db.leaves.insert_one(leave_record)
         
+        # Create notification for employee
+        notification_message = f"Your {leave_request['leave_type']} request from {leave_request['start_date']} to {leave_request['end_date']} has been {approval_data.status}."
+        if approval_data.status == "rejected" and approval_data.manager_reason:
+            notification_message += f" Reason: {approval_data.manager_reason}"
+            
+        notification = {
+            "id": str(uuid.uuid4()),
+            "user_id": leave_request["user_id"],
+            "title": f"Leave Request {approval_data.status.title()}",
+            "message": notification_message,
+            "type": "leave_update",
+            "status": "unread",
+            "created_at": datetime.now(timezone.utc),
+            "related_request_id": request_id
+        }
+        
+        await db.notifications.insert_one(notification)
+
         return {"message": f"Leave request {approval_data.status} successfully"}
         
     except HTTPException:
