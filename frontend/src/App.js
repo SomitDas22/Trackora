@@ -4716,6 +4716,22 @@ const Dashboard = ({ user, onLogout, orgBranding }) => {
               {/* Raise IT Ticket Card */}
               <RaiseITTicketCard />
             </div>
+
+            {/* Notifications Card */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+              <NotificationsSection 
+                notifications={notifications} 
+                unreadCount={unreadCount} 
+                onMarkRead={markNotificationRead} 
+              />
+            </div>
+
+            {/* Manager Section - Only show if user is a manager */}
+            {isManager && (
+              <div className="mt-6">
+                <ManagerLeaveRequestsSection />
+              </div>
+            )}
           </TabsContent>
 
           {/* Calendar Tab */}
