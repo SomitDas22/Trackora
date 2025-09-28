@@ -439,124 +439,322 @@ const Dashboard = ({ user, onLogout }) => {
       </div>
 
       <div className="max-w-6xl mx-auto p-4 space-y-6">
-        {/* Main CTA Card */}
-        <Card className="shadow-lg border-0 bg-gradient-to-r from-white to-blue-50">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-gray-800">
-              Today's Work Session
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Work Timer */}
-            {activeSession && (
-              <div className="text-center space-y-4">
-                <div className="flex justify-center items-center space-x-8">
-                  <div className="text-center">
-                    <div className="text-sm text-gray-600 mb-1">Effective Work Time</div>
-                    <div className="text-4xl font-mono font-bold text-blue-600" data-testid="work-timer">
-                      {formatTime(activeSession.effective_seconds)}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      Target: 09:00:00
-                    </div>
-                  </div>
-                  
-                  {activeSession.active_break && (
-                    <div className="text-center">
-                      <div className="text-sm text-gray-600 mb-1">Break Time</div>
-                      <div className="text-2xl font-mono font-bold text-orange-500" data-testid="break-timer">
-                        {formatTime(Math.floor((new Date() - new Date(activeSession.active_break.start_time)) / 1000))}
+        {/* Navigation Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2" data-testid="dashboard-tab">
+              <BarChart3 className="h-4 w-4" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="flex items-center gap-2" data-testid="calendar-tab">
+              <Calendar className="h-4 w-4" />
+              Calendar
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2" data-testid="history-tab">
+              <History className="h-4 w-4" />
+              History
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-2" data-testid="reports-tab">
+              <BarChart3 className="h-4 w-4" />
+              Reports
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard" className="space-y-6">
+            {/* Main CTA Card */}
+            <Card className="shadow-lg border-0 bg-gradient-to-r from-white to-blue-50">
+              <CardHeader className="text-center">
+                <CardTitle className="text-3xl font-bold text-gray-800">
+                  Today's Work Session
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Work Timer */}
+                {activeSession && (
+                  <div className="text-center space-y-4">
+                    <div className="flex justify-center items-center space-x-8">
+                      <div className="text-center">
+                        <div className="text-sm text-gray-600 mb-1">Effective Work Time</div>
+                        <div className="text-4xl font-mono font-bold text-blue-600" data-testid="work-timer">
+                          {formatTime(activeSession.effective_seconds)}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Target: 09:00:00
+                        </div>
                       </div>
-                      <Badge className="mt-1 bg-orange-100 text-orange-700">On Break</Badge>
+                      
+                      {activeSession.active_break && (
+                        <div className="text-center">
+                          <div className="text-sm text-gray-600 mb-1">Break Time</div>
+                          <div className="text-2xl font-mono font-bold text-orange-500" data-testid="break-timer">
+                            {formatTime(Math.floor((new Date() - new Date(activeSession.active_break.start_time)) / 1000))}
+                          </div>
+                          <Badge className="mt-1 bg-orange-100 text-orange-700">On Break</Badge>
+                        </div>
+                      )}
                     </div>
-                  )}
+                    
+                    {activeSession.eta_logout_utc && (
+                      <div className="text-center">
+                        <div className="text-sm text-gray-600">Estimated Logout Time</div>
+                        <div className="text-lg font-mono text-green-600" data-testid="eta-logout">
+                          {new Date(activeSession.eta_logout_utc).toLocaleTimeString('en-IN')}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* CTA Button */}
+                <div className="max-w-md mx-auto">
+                  {getCTAButton()}
                 </div>
                 
-                {activeSession.eta_logout_utc && (
-                  <div className="text-center">
-                    <div className="text-sm text-gray-600">Estimated Logout Time</div>
-                    <div className="text-lg font-mono text-green-600" data-testid="eta-logout">
-                      {new Date(activeSession.eta_logout_utc).toLocaleTimeString('en-IN')}
+                {/* Break Control */}
+                {activeSession && (
+                  <div className="max-w-sm mx-auto">
+                    {getBreakButton()}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Status Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center">
+                    <Clock className="mr-2 h-5 w-5 text-blue-600" />
+                    Session Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {activeSession ? (
+                    <div className="space-y-2">
+                      <p><span className="font-medium">Started:</span> {new Date(activeSession.session.start_time).toLocaleTimeString('en-IN')}</p>
+                      <p><span className="font-medium">Duration:</span> {formatTime(Math.floor((new Date() - new Date(activeSession.session.start_time)) / 1000))}</p>
+                      <Badge className={activeSession.can_logout ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
+                        {activeSession.can_logout ? "Can Logout" : "Working"}
+                      </Badge>
+                    </div>
+                  ) : (
+                    <p className="text-gray-600">No active session</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Today's Progress</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {activeSession ? (
+                    <div className="space-y-2">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{width: `${Math.min((activeSession.effective_seconds / (9 * 60 * 60)) * 100, 100)}%`}}
+                        ></div>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {Math.round((activeSession.effective_seconds / (9 * 60 * 60)) * 100)}% Complete
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-gray-600">Start your day!</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Quick Stats</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <p><span className="font-medium">Role:</span> {user.role}</p>
+                    <p><span className="font-medium">Email:</span> {user.email}</p>
+                    <Badge variant="outline" className="border-green-200 text-green-700">Active Employee</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Calendar Tab */}
+          <TabsContent value="calendar" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <Calendar className="h-6 w-6" />
+                  Work Calendar
+                </CardTitle>
+                <p className="text-gray-600">View your work days, leaves, and holidays</p>
+              </CardHeader>
+              <CardContent>
+                {calendarData && (
+                  <div className="space-y-4">
+                    {/* Calendar Header */}
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold">
+                        {new Date(calendarData.year, calendarData.month - 1).toLocaleDateString('en-US', { 
+                          month: 'long', 
+                          year: 'numeric' 
+                        })}
+                      </h3>
+                      <div className="flex gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-green-500 rounded"></div>
+                          <span>Worked</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-red-500 rounded"></div>
+                          <span>Leave</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                          <span>Holiday</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-orange-500 rounded"></div>
+                          <span>Half Day</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Calendar Grid */}
+                    <div className="grid grid-cols-7 gap-2">
+                      {/* Weekday headers */}
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <div key={day} className="text-center font-medium text-gray-600 p-2">
+                          {day}
+                        </div>
+                      ))}
+                      
+                      {/* Calendar days */}
+                      {calendarData.days.map(day => {
+                        let bgColor = 'bg-gray-50 hover:bg-gray-100';
+                        if (day.type === 'worked') bgColor = 'bg-green-100 hover:bg-green-200';
+                        else if (day.type === 'leave') bgColor = 'bg-red-100 hover:bg-red-200';
+                        else if (day.type === 'holiday') bgColor = 'bg-yellow-100 hover:bg-yellow-200';
+                        else if (day.type === 'half-day') bgColor = 'bg-orange-100 hover:bg-orange-200';
+                        
+                        return (
+                          <div
+                            key={day.date}
+                            className={`p-3 text-center rounded-lg cursor-pointer transition-colors ${bgColor}`}
+                            data-testid={`calendar-day-${day.date}`}
+                          >
+                            <span className="font-medium">{day.day}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
-              </div>
-            )}
-            
-            {/* CTA Button */}
-            <div className="max-w-md mx-auto">
-              {getCTAButton()}
-            </div>
-            
-            {/* Break Control */}
-            {activeSession && (
-              <div className="max-w-sm mx-auto">
-                {getBreakButton()}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
-                <Clock className="mr-2 h-5 w-5 text-blue-600" />
-                Session Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {activeSession ? (
-                <div className="space-y-2">
-                  <p><span className="font-medium">Started:</span> {new Date(activeSession.session.start_time).toLocaleTimeString('en-IN')}</p>
-                  <p><span className="font-medium">Duration:</span> {formatTime(Math.floor((new Date() - new Date(activeSession.session.start_time)) / 1000))}</p>
-                  <Badge className={activeSession.can_logout ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
-                    {activeSession.can_logout ? "Can Logout" : "Working"}
-                  </Badge>
-                </div>
-              ) : (
-                <p className="text-gray-600">No active session</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Today's Progress</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {activeSession ? (
-                <div className="space-y-2">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{width: `${Math.min((activeSession.effective_seconds / (9 * 60 * 60)) * 100, 100)}%`}}
-                    ></div>
+          {/* History Tab */}
+          <TabsContent value="history" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <History className="h-6 w-6" />
+                  Work History
+                </CardTitle>
+                <p className="text-gray-600">View your login/logout history and work sessions</p>
+              </CardHeader>
+              <CardContent>
+                {sessionHistory.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Login Time</TableHead>
+                          <TableHead>Logout Time</TableHead>
+                          <TableHead>Total Duration</TableHead>
+                          <TableHead>Effective Work</TableHead>
+                          <TableHead>Breaks</TableHead>
+                          <TableHead>Day Type</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sessionHistory.map(session => (
+                          <TableRow key={session.id} data-testid={`history-row-${session.id}`}>
+                            <TableCell className="font-medium">
+                              {new Date(session.date).toLocaleDateString('en-IN')}
+                            </TableCell>
+                            <TableCell>{session.login_time}</TableCell>
+                            <TableCell>{session.logout_time}</TableCell>
+                            <TableCell>{session.total_duration}</TableCell>
+                            <TableCell className="font-mono">{session.effective_duration}</TableCell>
+                            <TableCell>
+                              {session.break_count} ({session.break_duration})
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={session.day_type === 'Half Day' ? 'secondary' : 'default'}>
+                                {session.day_type}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={session.timesheet_status === 'Submitted' ? 'default' : 'destructive'}>
+                                {session.timesheet_status}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    {Math.round((activeSession.effective_seconds / (9 * 60 * 60)) * 100)}% Complete
-                  </p>
-                </div>
-              ) : (
-                <p className="text-gray-600">Start your day!</p>
-              )}
-            </CardContent>
-          </Card>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No work history found. Start your first session!</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Quick Stats</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <p><span className="font-medium">Role:</span> {user.role}</p>
-                <p><span className="font-medium">Email:</span> {user.email}</p>
-                <Badge variant="outline" className="border-green-200 text-green-700">Active Employee</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          {/* Reports Tab */}
+          <TabsContent value="reports" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <BarChart3 className="h-6 w-6" />
+                  Leave Reports
+                </CardTitle>
+                <p className="text-gray-600">Monthly leave statistics for {new Date().getFullYear()}</p>
+              </CardHeader>
+              <CardContent>
+                {dashboardStats && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {dashboardStats.leaves_by_month.map(month => (
+                        <Card key={month.month} className="p-4">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <h4 className="font-medium">{month.month_name}</h4>
+                              <p className="text-2xl font-bold text-blue-600">{month.leaves_count}</p>
+                            </div>
+                            <div className="text-gray-400">
+                              <Calendar className="h-6 w-6" />
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Timesheet Modal */}
