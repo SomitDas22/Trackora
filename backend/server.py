@@ -320,6 +320,17 @@ async def register(user_data: UserCreate):
     
     await db.users.insert_one(user.dict())
     
+    # Auto-assign new employee to default department
+    default_dept = await db.departments.find_one({"name": "General"})
+    if default_dept:
+        assignment = {
+            "id": str(uuid.uuid4()),
+            "employee_id": user.id,
+            "department_id": default_dept["id"],
+            "assigned_at": datetime.now(timezone.utc)
+        }
+        await db.employee_departments.insert_one(assignment)
+    
     access_token = create_access_token(data={"sub": user.id})
     return {"access_token": access_token, "token_type": "bearer"}
 
