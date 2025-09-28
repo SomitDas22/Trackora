@@ -3519,6 +3519,18 @@ function App() {
   const [orgBranding, setOrgBranding] = useState({ company_name: 'Work Hours Tracker', company_logo: '' });
 
   useEffect(() => {
+    // Fetch organization branding info first (public endpoint)
+    const fetchOrgBranding = async () => {
+      try {
+        const response = await axios.get(`${API}/organization-info`);
+        setOrgBranding(response.data);
+      } catch (err) {
+        console.error('Error fetching organization info:', err);
+      }
+    };
+
+    fetchOrgBranding();
+
     // Check for regular user token
     const token = localStorage.getItem('token');
     const adminToken = localStorage.getItem('adminToken');
