@@ -3287,6 +3287,21 @@ const Dashboard = ({ user, onLogout, orgBranding }) => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* New Employee Cards Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+              {/* Associated Projects Card */}
+              <AssociatedProjectsCard />
+              
+              {/* Leave Status Card */}
+              <LeaveStatusCard />
+              
+              {/* Apply Leave Card */}
+              <ApplyLeaveCard />
+              
+              {/* Raise IT Ticket Card */}
+              <RaiseITTicketCard />
+            </div>
           </TabsContent>
 
           {/* Calendar Tab */}
