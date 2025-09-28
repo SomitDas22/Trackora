@@ -412,6 +412,12 @@ const AdminDashboard = ({ admin, onLogout }) => {
     start_date: '', end_date: '', status: 'Active'
   });
   const [selectedEmployeesForProject, setSelectedEmployeesForProject] = useState([]);
+  const [showOrgSettingsPage, setShowOrgSettingsPage] = useState(false);
+  const [organizationSettings, setOrganizationSettings] = useState(null);
+  const [orgSettingsData, setOrgSettingsData] = useState({
+    company_name: '', establishment_date: '', company_email: '',
+    founder_name: '', founder_email: '', address: '', phone: '', website: ''
+  });
 
   // Fetch all users
   const fetchUsers = async () => {
