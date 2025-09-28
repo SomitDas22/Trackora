@@ -790,6 +790,342 @@ class BackendTester:
             except Exception as e:
                 self.log_result("Authentication - Role Check", False, f"Exception: {str(e)}")
     
+    def setup_manager_test_data(self):
+        """Setup test data for manager functionality"""
+        print("\n=== Setting up Manager Test Data ===")
+        
+        if not self.admin_token:
+            self.log_result("Manager Setup", False, "No admin token available")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        try:
+            # Create a test department
+            dept_data = {
+                "name": f"Test Department {uuid.uuid4().hex[:8]}",
+                "description": "Test department for manager testing"
+            }
+            
+            dept_response = requests.post(f"{API_BASE}/admin/create-department", json=dept_data, headers=headers)
+            if dept_response.status_code != 200:
+                self.log_result("Manager Setup - Department", False, f"Failed to create department: {dept_response.text}")
+                return False
+            
+            dept_id = dept_response.json()["department_id"]
+            
+            # Create a manager assignment for the employee
+            manager_data = {
+                "employee_id": self.employee_id,
+                "department_id": dept_id
+            }
+            
+            manager_response = requests.post(f"{API_BASE}/admin/create-manager", json=manager_data, headers=headers)
+            if manager_response.status_code == 200:
+                self.manager_id = manager_response.json()["manager_id"]
+                self.log_result("Manager Setup", True, "Manager test data created successfully")
+                return True
+            else:
+                self.log_result("Manager Setup", False, f"Failed to create manager: {manager_response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_result("Manager Setup", False, f"Exception: {str(e)}")
+            return False
+    
+    def test_manager_status_api(self):
+        """Test GET /api/employee/manager-status"""
+        print("\n=== Testing Manager Status API ===")
+        
+        if not self.employee_token:
+            self.log_result("Manager Status API", False, "No employee token available")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.employee_token}"}
+        
+        # Test manager status check without manager assignment
+        try:
+            response = requests.get(f"{API_BASE}/employee/manager-status", headers=headers)
+            
+            if response.status_code == 200:
+                status = response.json()
+                
+                if "is_manager" in status:
+                    if status["is_manager"] == False:
+                        self.log_result("Manager Status API - Regular Employee", True, 
+                                      "Correctly identified regular employee as non-manager")
+                    else:
+                        # If user is already a manager, test the manager response structure
+                        required_keys = ["is_manager", "department_id", "department_name", "manager_assignment_id"]
+                        missing_keys = [key for key in required_keys if key not in status]
+                        
+                        if missing_keys:
+                            self.log_result("Manager Status API - Manager Response", False, 
+                                          f"Missing keys in manager response: {missing_keys}")
+                        else:
+                            self.log_result("Manager Status API - Manager Response", True, 
+                                          f"Manager status returned correctly with department: {status['department_name']}")
+                else:
+                    self.log_result("Manager Status API", False, "Missing 'is_manager' field in response")
+            else:
+                self.log_result("Manager Status API", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_result("Manager Status API", False, f"Exception: {str(e)}")
+        
+        # Setup manager data and test manager status
+        if self.setup_manager_test_data():
+            try:
+                response = requests.get(f"{API_BASE}/employee/manager-status", headers=headers)
+                
+                if response.status_code == 200:
+                    status = response.json()
+                    
+                    if status.get("is_manager") == True:
+                        required_keys = ["department_id", "department_name", "manager_assignment_id"]
+                        missing_keys = [key for key in required_keys if key not in status]
+                        
+                        if missing_keys:
+                            self.log_result("Manager Status API - After Assignment", False, 
+                                          f"Missing keys after manager assignment: {missing_keys}")
+                        else:
+                            self.log_result("Manager Status API - After Assignment", True, 
+                                          f"Manager status correctly updated after assignment")
+                    else:
+                        self.log_result("Manager Status API - After Assignment", False, 
+                                      "User should be manager after assignment")
+                else:
+                    self.log_result("Manager Status API - After Assignment", False, 
+                                  f"HTTP {response.status_code}: {response.text}")
+                    
+            except Exception as e:
+                self.log_result("Manager Status API - After Assignment", False, f"Exception: {str(e)}")
+    
+    def test_notification_apis(self):
+        """Test notification-related APIs"""
+        print("\n=== Testing Notification APIs ===")
+        
+        if not self.employee_token:
+            self.log_result("Notification APIs", False, "No employee token available")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.employee_token}"}
+        
+        # Test GET /api/employee/notifications
+        try:
+            response = requests.get(f"{API_BASE}/employee/notifications", headers=headers)
+            
+            if response.status_code == 200:
+                notifications = response.json()
+                
+                if isinstance(notifications, list):
+                    self.log_result("Get Notifications API", True, 
+                                  f"Retrieved {len(notifications)} notifications")
+                    
+                    # Validate notification structure if any exist
+                    if notifications:
+                        notif = notifications[0]
+                        required_keys = ["id", "title", "message", "type", "status", "created_at"]
+                        missing_keys = [key for key in required_keys if key not in notif]
+                        
+                        if missing_keys:
+                            self.log_result("Get Notifications API - Structure", False, 
+                                          f"Missing keys in notification: {missing_keys}")
+                        else:
+                            self.log_result("Get Notifications API - Structure", True, 
+                                          "Notification structure is correct")
+                else:
+                    self.log_result("Get Notifications API", False, "Response is not a list")
+            else:
+                self.log_result("Get Notifications API", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_result("Get Notifications API", False, f"Exception: {str(e)}")
+        
+        # Test GET /api/employee/notifications/unread-count
+        try:
+            response = requests.get(f"{API_BASE}/employee/notifications/unread-count", headers=headers)
+            
+            if response.status_code == 200:
+                count_data = response.json()
+                
+                if "unread_count" in count_data and isinstance(count_data["unread_count"], int):
+                    self.log_result("Unread Count API", True, 
+                                  f"Unread count: {count_data['unread_count']}")
+                else:
+                    self.log_result("Unread Count API", False, "Invalid unread count response structure")
+            else:
+                self.log_result("Unread Count API", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_result("Unread Count API", False, f"Exception: {str(e)}")
+        
+        # Test PUT /api/employee/notifications/{id}/read with dummy ID
+        dummy_notification_id = str(uuid.uuid4())
+        try:
+            response = requests.put(f"{API_BASE}/employee/notifications/{dummy_notification_id}/read", headers=headers)
+            
+            if response.status_code == 404:
+                self.log_result("Mark Notification Read API", True, "Correctly handled non-existent notification")
+            else:
+                self.log_result("Mark Notification Read API", False, 
+                              f"Should return 404 for non-existent notification, got {response.status_code}")
+                
+        except Exception as e:
+            self.log_result("Mark Notification Read API", False, f"Exception: {str(e)}")
+    
+    def test_leave_approval_notification_workflow(self):
+        """Test the complete leave approval workflow with notifications"""
+        print("\n=== Testing Leave Approval Notification Workflow ===")
+        
+        if not self.employee_token:
+            self.log_result("Leave Approval Workflow", False, "No employee token available")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.employee_token}"}
+        
+        # Step 1: Apply for leave
+        leave_data = {
+            "leave_type": "Casual Leave",
+            "start_date": (datetime.now() + timedelta(days=10)).strftime("%Y-%m-%d"),
+            "end_date": (datetime.now() + timedelta(days=10)).strftime("%Y-%m-%d"),
+            "reason": "Testing notification workflow",
+            "days_count": 1.0
+        }
+        
+        leave_id = None
+        try:
+            response = requests.post(f"{API_BASE}/employee/apply-leave", json=leave_data, headers=headers)
+            
+            if response.status_code == 200:
+                result = response.json()
+                leave_id = result.get("id")
+                self.log_result("Leave Approval Workflow - Apply", True, "Leave application submitted")
+            else:
+                self.log_result("Leave Approval Workflow - Apply", False, 
+                              f"Failed to apply for leave: {response.text}")
+                return
+                
+        except Exception as e:
+            self.log_result("Leave Approval Workflow - Apply", False, f"Exception: {str(e)}")
+            return
+        
+        # Step 2: Check if user can act as manager (if manager setup was successful)
+        if self.manager_id and leave_id:
+            # Get initial unread count
+            initial_count = 0
+            try:
+                count_response = requests.get(f"{API_BASE}/employee/notifications/unread-count", headers=headers)
+                if count_response.status_code == 200:
+                    initial_count = count_response.json().get("unread_count", 0)
+            except:
+                pass
+            
+            # Step 3: Try to approve the leave as manager
+            approval_data = {
+                "status": "approved",
+                "manager_reason": "Approved for testing notification workflow"
+            }
+            
+            try:
+                # First check if there are any pending requests for this manager
+                manager_requests_response = requests.get(f"{API_BASE}/manager/leave-requests", headers=headers)
+                
+                if manager_requests_response.status_code == 200:
+                    pending_requests = manager_requests_response.json()
+                    
+                    # Find our leave request in the pending list
+                    our_request = None
+                    for req in pending_requests:
+                        if req.get("id") == leave_id:
+                            our_request = req
+                            break
+                    
+                    if our_request:
+                        # Approve the leave request
+                        approve_response = requests.put(f"{API_BASE}/manager/leave-requests/{leave_id}", 
+                                                      json=approval_data, headers=headers)
+                        
+                        if approve_response.status_code == 200:
+                            self.log_result("Leave Approval Workflow - Approve", True, "Leave request approved")
+                            
+                            # Step 4: Check if notification was created
+                            import time
+                            time.sleep(1)  # Brief delay to ensure notification is created
+                            
+                            try:
+                                count_response = requests.get(f"{API_BASE}/employee/notifications/unread-count", headers=headers)
+                                if count_response.status_code == 200:
+                                    new_count = count_response.json().get("unread_count", 0)
+                                    
+                                    if new_count > initial_count:
+                                        self.log_result("Leave Approval Workflow - Notification Created", True, 
+                                                      f"Notification created (unread count increased from {initial_count} to {new_count})")
+                                        
+                                        # Step 5: Get notifications and verify content
+                                        notif_response = requests.get(f"{API_BASE}/employee/notifications", headers=headers)
+                                        if notif_response.status_code == 200:
+                                            notifications = notif_response.json()
+                                            
+                                            # Look for our leave approval notification
+                                            approval_notif = None
+                                            for notif in notifications:
+                                                if ("approved" in notif.get("message", "").lower() and 
+                                                    leave_data["start_date"] in notif.get("message", "")):
+                                                    approval_notif = notif
+                                                    break
+                                            
+                                            if approval_notif:
+                                                self.log_result("Leave Approval Workflow - Notification Content", True, 
+                                                              f"Notification contains correct approval message")
+                                                
+                                                # Step 6: Test marking notification as read
+                                                read_response = requests.put(
+                                                    f"{API_BASE}/employee/notifications/{approval_notif['id']}/read", 
+                                                    headers=headers)
+                                                
+                                                if read_response.status_code == 200:
+                                                    self.log_result("Leave Approval Workflow - Mark Read", True, 
+                                                                  "Notification marked as read successfully")
+                                                    
+                                                    # Verify unread count decreased
+                                                    final_count_response = requests.get(f"{API_BASE}/employee/notifications/unread-count", headers=headers)
+                                                    if final_count_response.status_code == 200:
+                                                        final_count = final_count_response.json().get("unread_count", 0)
+                                                        if final_count < new_count:
+                                                            self.log_result("Leave Approval Workflow - Count Update", True, 
+                                                                          f"Unread count correctly decreased to {final_count}")
+                                                        else:
+                                                            self.log_result("Leave Approval Workflow - Count Update", False, 
+                                                                          "Unread count did not decrease after marking as read")
+                                                else:
+                                                    self.log_result("Leave Approval Workflow - Mark Read", False, 
+                                                                  f"Failed to mark notification as read: {read_response.text}")
+                                            else:
+                                                self.log_result("Leave Approval Workflow - Notification Content", False, 
+                                                              "Could not find approval notification in list")
+                                    else:
+                                        self.log_result("Leave Approval Workflow - Notification Created", False, 
+                                                      f"Unread count did not increase (was {initial_count}, still {new_count})")
+                                        
+                            except Exception as e:
+                                self.log_result("Leave Approval Workflow - Notification Check", False, f"Exception: {str(e)}")
+                        else:
+                            self.log_result("Leave Approval Workflow - Approve", False, 
+                                          f"Failed to approve leave: {approve_response.text}")
+                    else:
+                        self.log_result("Leave Approval Workflow - Find Request", False, 
+                                      "Could not find submitted leave request in manager's pending list")
+                else:
+                    self.log_result("Leave Approval Workflow - Manager Requests", False, 
+                                  f"Failed to get manager requests: {manager_requests_response.text}")
+                    
+            except Exception as e:
+                self.log_result("Leave Approval Workflow - Manager Actions", False, f"Exception: {str(e)}")
+        else:
+            self.log_result("Leave Approval Workflow - Manager Setup", False, 
+                          "Manager setup not completed, skipping approval workflow test")
+    
     def run_all_tests(self):
         """Run all backend tests"""
         print("🚀 Starting Backend API Testing for Employee Dashboard and Leave Management")
