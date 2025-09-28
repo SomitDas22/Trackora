@@ -185,6 +185,11 @@ const Dashboard = ({ user, onLogout }) => {
     status: 'Completed'
   });
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [sessionHistory, setSessionHistory] = useState([]);
+  const [calendarData, setCalendarData] = useState(null);
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   // Fetch active session
   const fetchActiveSession = async () => {
