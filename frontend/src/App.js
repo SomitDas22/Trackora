@@ -1,53 +1,654 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import axios from 'axios';
+import { Button } from './components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
+import { Input } from './components/ui/input';
+import { Label } from './components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog';
+import { Textarea } from './components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
+import { Badge } from './components/ui/badge';
+import { Clock, Play, Pause, LogOut, UserCheck, Coffee } from 'lucide-react';
+import './App.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const Home = () => {
-  const helloWorldApi = async () => {
+// Configure axios defaults
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+
+const AuthPage = ({ onLogin }) => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    email_or_phone: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
     try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
+      let response;
+      if (isLogin) {
+        response = await axios.post(`${API}/auth/login`, {
+          email_or_phone: formData.email_or_phone,
+          password: formData.password
+        });
+      } else {
+        response = await axios.post(`${API}/auth/register`, {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password
+        });
+      }
+
+      localStorage.setItem('token', response.data.access_token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
+      onLogin();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Authentication failed');
+    } finally {
+      setLoading(false);
     }
   };
 
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-gray-800">
+            {isLogin ? 'Welcome Back' : 'Join Our Team'}
+          </CardTitle>
+          <p className="text-gray-600">Work Hours Tracker</p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <>
+                <div>
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    required
+                  />
+                </div>
+              </>
+            )}
+            
+            {isLogin && (
+              <div>
+                <Label htmlFor="email_or_phone">Email or Phone</Label>
+                <Input
+                  id="email_or_phone"
+                  type="text"
+                  value={formData.email_or_phone}
+                  onChange={(e) => setFormData({...formData, email_or_phone: e.target.value})}
+                  required
+                />
+              </div>
+            )}
+            
+            <div>
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                required
+              />
+            </div>
+            
+            {error && (
+              <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
+                {error}
+              </div>
+            )}
+            
+            <Button 
+              type="submit" 
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              disabled={loading}
+              data-testid={isLogin ? "login-submit-btn" : "register-submit-btn"}
+            >
+              {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Sign Up')}
+            </Button>
+          </form>
+          
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-blue-600 hover:underline"
+              data-testid="toggle-auth-mode"
+            >
+              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+const formatTime = (seconds) => {
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+const Dashboard = ({ user, onLogout }) => {
+  const [activeSession, setActiveSession] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [showTimesheetModal, setShowTimesheetModal] = useState(false);
+  const [timesheetData, setTimesheetData] = useState({
+    task_id: '',
+    work_description: '',
+    status: 'Completed'
+  });
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Fetch active session
+  const fetchActiveSession = async () => {
+    try {
+      const response = await axios.get(`${API}/sessions/active`);
+      setActiveSession(response.data);
+    } catch (err) {
+      console.error('Error fetching active session:', err);
+    }
+  };
+
+  // Timer effect
   useEffect(() => {
-    helloWorldApi();
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
+  // Fetch session on mount and periodically
+  useEffect(() => {
+    fetchActiveSession();
+    const interval = setInterval(fetchActiveSession, 5000); // Refresh every 5 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  const startSession = async () => {
+    setLoading(true);
+    try {
+      await axios.post(`${API}/sessions/start`);
+      await fetchActiveSession();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to start session');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startBreak = async () => {
+    setLoading(true);
+    try {
+      await axios.post(`${API}/breaks/start`);
+      await fetchActiveSession();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to start break');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const endBreak = async () => {
+    setLoading(true);
+    try {
+      await axios.post(`${API}/breaks/end`);
+      await fetchActiveSession();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to end break');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyHalfDay = async () => {
+    if (!timesheetData.task_id || !timesheetData.work_description) {
+      alert('Please fill in all timesheet fields');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await axios.post(`${API}/leaves/half-day`, timesheetData);
+      setActiveSession(null);
+      setShowTimesheetModal(false);
+      setTimesheetData({ task_id: '', work_description: '', status: 'Completed' });
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to apply half day');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const endSession = async () => {
+    if (!timesheetData.task_id || !timesheetData.work_description) {
+      alert('Please fill in all timesheet fields');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await axios.post(`${API}/sessions/end`, timesheetData);
+      setActiveSession(null);
+      setShowTimesheetModal(false);
+      setTimesheetData({ task_id: '', work_description: '', status: 'Completed' });
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to end session');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    delete axios.defaults.headers.common['Authorization'];
+    onLogout();
+  };
+
+  const getCTAButton = () => {
+    if (!activeSession) {
+      return (
+        <Button
+          onClick={startSession}
+          disabled={loading}
+          className="w-full h-16 text-lg bg-green-600 hover:bg-green-700"
+          data-testid="start-session-btn"
         >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
+          <Play className="mr-2 h-5 w-5" />
+          Login & Start Work
+        </Button>
+      );
+    }
+
+    if (activeSession.can_logout) {
+      return (
+        <Button
+          onClick={() => setShowTimesheetModal(true)}
+          disabled={loading}
+          className="w-full h-16 text-lg bg-red-600 hover:bg-red-700"
+          data-testid="logout-btn"
+        >
+          <LogOut className="mr-2 h-5 w-5" />
+          Submit Timesheet & Logout
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        onClick={() => setShowTimesheetModal(true)}
+        disabled={loading}
+        className="w-full h-16 text-lg bg-orange-600 hover:bg-orange-700"
+        data-testid="apply-half-day-btn"
+      >
+        <UserCheck className="mr-2 h-5 w-5" />
+        Apply Half Day
+      </Button>
+    );
+  };
+
+  const getBreakButton = () => {
+    if (!activeSession) return null;
+
+    if (activeSession.active_break) {
+      return (
+        <Button
+          onClick={endBreak}
+          disabled={loading}
+          variant="outline"
+          className="w-full border-orange-300 text-orange-600 hover:bg-orange-50"
+          data-testid="end-break-btn"
+        >
+          <Pause className="mr-2 h-4 w-4" />
+          End Break
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        onClick={startBreak}
+        disabled={loading}
+        variant="outline"
+        className="w-full border-blue-300 text-blue-600 hover:bg-blue-50"
+        data-testid="start-break-btn"
+      >
+        <Coffee className="mr-2 h-4 w-4" />
+        Start Break
+      </Button>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Work Hours Tracker</h1>
+            <p className="text-gray-600">Welcome back, {user.name}</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="text-right">
+              <div className="text-sm text-gray-600">
+                {currentTime.toLocaleDateString('en-IN', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </div>
+              <div className="text-lg font-mono">
+                {currentTime.toLocaleTimeString('en-IN')}
+              </div>
+            </div>
+            <Button 
+              onClick={handleLogout} 
+              variant="outline"
+              data-testid="header-logout-btn"
+            >
+              Logout
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto p-4 space-y-6">
+        {/* Main CTA Card */}
+        <Card className="shadow-lg border-0 bg-gradient-to-r from-white to-blue-50">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl font-bold text-gray-800">
+              Today's Work Session
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Work Timer */}
+            {activeSession && (
+              <div className="text-center space-y-4">
+                <div className="flex justify-center items-center space-x-8">
+                  <div className="text-center">
+                    <div className="text-sm text-gray-600 mb-1">Effective Work Time</div>
+                    <div className="text-4xl font-mono font-bold text-blue-600" data-testid="work-timer">
+                      {formatTime(activeSession.effective_seconds)}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Target: 09:00:00
+                    </div>
+                  </div>
+                  
+                  {activeSession.active_break && (
+                    <div className="text-center">
+                      <div className="text-sm text-gray-600 mb-1">Break Time</div>
+                      <div className="text-2xl font-mono font-bold text-orange-500" data-testid="break-timer">
+                        {formatTime(Math.floor((new Date() - new Date(activeSession.active_break.start_time)) / 1000))}
+                      </div>
+                      <Badge className="mt-1 bg-orange-100 text-orange-700">On Break</Badge>
+                    </div>
+                  )}
+                </div>
+                
+                {activeSession.eta_logout_utc && (
+                  <div className="text-center">
+                    <div className="text-sm text-gray-600">Estimated Logout Time</div>
+                    <div className="text-lg font-mono text-green-600" data-testid="eta-logout">
+                      {new Date(activeSession.eta_logout_utc).toLocaleTimeString('en-IN')}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* CTA Button */}
+            <div className="max-w-md mx-auto">
+              {getCTAButton()}
+            </div>
+            
+            {/* Break Control */}
+            {activeSession && (
+              <div className="max-w-sm mx-auto">
+                {getBreakButton()}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Status Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center">
+                <Clock className="mr-2 h-5 w-5 text-blue-600" />
+                Session Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {activeSession ? (
+                <div className="space-y-2">
+                  <p><span className="font-medium">Started:</span> {new Date(activeSession.session.start_time).toLocaleTimeString('en-IN')}</p>
+                  <p><span className="font-medium">Duration:</span> {formatTime(Math.floor((new Date() - new Date(activeSession.session.start_time)) / 1000))}</p>
+                  <Badge className={activeSession.can_logout ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
+                    {activeSession.can_logout ? "Can Logout" : "Working"}
+                  </Badge>
+                </div>
+              ) : (
+                <p className="text-gray-600">No active session</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Today's Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {activeSession ? (
+                <div className="space-y-2">
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{width: `${Math.min((activeSession.effective_seconds / (9 * 60 * 60)) * 100, 100)}%`}}
+                    ></div>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {Math.round((activeSession.effective_seconds / (9 * 60 * 60)) * 100)}% Complete
+                  </p>
+                </div>
+              ) : (
+                <p className="text-gray-600">Start your day!</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Quick Stats</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <p><span className="font-medium">Role:</span> {user.role}</p>
+                <p><span className="font-medium">Email:</span> {user.email}</p>
+                <Badge variant="outline" className="border-green-200 text-green-700">Active Employee</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Timesheet Modal */}
+      <Dialog open={showTimesheetModal} onOpenChange={setShowTimesheetModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Submit Timesheet</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="task_id">Task ID</Label>
+              <Input
+                id="task_id"
+                value={timesheetData.task_id}
+                onChange={(e) => setTimesheetData({...timesheetData, task_id: e.target.value})}
+                placeholder="e.g., TASK-123"
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="work_description">Work Description</Label>
+              <Textarea
+                id="work_description"
+                value={timesheetData.work_description}
+                onChange={(e) => setTimesheetData({...timesheetData, work_description: e.target.value})}
+                placeholder="Describe what you worked on today..."
+                rows={3}
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select 
+                value={timesheetData.status} 
+                onValueChange={(value) => setTimesheetData({...timesheetData, status: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Ongoing">Ongoing</SelectItem>
+                  <SelectItem value="Blocked">Blocked</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex space-x-2">
+              {activeSession?.can_logout ? (
+                <Button 
+                  onClick={endSession} 
+                  disabled={loading}
+                  className="flex-1 bg-red-600 hover:bg-red-700"
+                  data-testid="submit-timesheet-logout"
+                >
+                  Submit & Logout
+                </Button>
+              ) : (
+                <Button 
+                  onClick={applyHalfDay} 
+                  disabled={loading}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700"
+                  data-testid="submit-timesheet-halfday"
+                >
+                  Apply Half Day
+                </Button>
+              )}
+              <Button 
+                onClick={() => setShowTimesheetModal(false)} 
+                variant="outline"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      // Verify token
+      axios.get(`${API}/auth/me`)
+        .then(response => {
+          setUser(response.data);
+          setIsAuthenticated(true);
+        })
+        .catch(() => {
+          localStorage.removeItem('token');
+          delete axios.defaults.headers.common['Authorization'];
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route 
+          path="/" 
+          element={
+            isAuthenticated ? 
+              <Dashboard user={user} onLogout={() => setIsAuthenticated(false)} /> :
+              <AuthPage onLogin={() => setIsAuthenticated(true)} />
+          } 
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
