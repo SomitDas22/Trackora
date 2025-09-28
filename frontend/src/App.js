@@ -381,6 +381,55 @@ const AdminDashboard = ({ admin, onLogout }) => {
     onLogout();
   };
 
+  // Create new admin
+  const createNewAdmin = async () => {
+    if (!newAdminData.name || !newAdminData.email || !newAdminData.password) {
+      alert('Please fill all fields');
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/admin/create-admin`, newAdminData);
+      setShowCreateAdminModal(false);
+      setNewAdminData({ name: '', email: '', password: '' });
+      await fetchAdminUsers();
+      alert('Admin created successfully!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to create admin');
+    }
+  };
+
+  // Add new holiday
+  const addNewHoliday = async () => {
+    if (!newHolidayData.date || !newHolidayData.name) {
+      alert('Please fill all fields');
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/admin/add-holiday`, newHolidayData);
+      setShowHolidayModal(false);
+      setNewHolidayData({ date: '', name: '' });
+      await fetchHolidaysData();
+      alert('Holiday added successfully!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to add holiday');
+    }
+  };
+
+  // Delete holiday
+  const deleteHoliday = async (holidayId) => {
+    if (!confirm('Are you sure you want to delete this holiday?')) return;
+
+    try {
+      await axios.delete(`${API}/admin/holiday/${holidayId}`);
+      await fetchHolidaysData();
+      alert('Holiday deleted successfully!');
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to delete holiday');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Admin Header */}
