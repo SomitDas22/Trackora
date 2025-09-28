@@ -357,6 +357,16 @@ const AdminDashboard = ({ admin, onLogout }) => {
     }
   };
 
+  // Fetch users on leave
+  const fetchUsersOnLeave = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/users-on-leave`);
+      setUsersOnLeave(response.data);
+    } catch (err) {
+      console.error('Error fetching users on leave:', err);
+    }
+  };
+
   // Fetch user sessions
   const fetchUserSessions = async (userId) => {
     try {
