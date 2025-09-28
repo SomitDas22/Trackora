@@ -152,15 +152,26 @@ const AuthPage = ({ onLogin }) => {
             </Button>
           </form>
           
-          <div className="mt-4 text-center">
+          <div className="mt-4 text-center space-y-2">
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-blue-600 hover:underline"
+              className="text-blue-600 hover:underline block w-full"
               data-testid="toggle-auth-mode"
             >
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
+            
+            {isLogin && (
+              <button
+                type="button"
+                onClick={() => window.location.href = '/admin-login'}
+                className="text-xs text-gray-500 hover:text-gray-700 hover:underline"
+                data-testid="admin-login-link"
+              >
+                Admin Login
+              </button>
+            )}
           </div>
         </CardContent>
       </Card>
