@@ -225,6 +225,36 @@ backend:
           agent: "testing"
           comment: "All logo upload APIs working correctly: POST /admin/upload-logo-base64 successfully handles valid PNG/JPEG base64 uploads with proper validation (file type, size limit 5MB, data format). DELETE /admin/remove-logo successfully removes logos. Organization settings integration verified - uploaded logos appear in GET /admin/organization-settings response. Authentication properly enforced (admin-only access). File validation working: rejects invalid base64, missing data, and oversized files. All test scenarios passed successfully."
 
+  - task: "Employee-Department Assignment System"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Implemented comprehensive employee-department assignment system to fix manager leave approval workflow. Added APIs: POST /admin/assign-employee-department (single assignment), POST /admin/bulk-assign-employees (bulk assignment), GET /admin/employee-department-assignments (view all assignments). Added startup function that creates default 'General' department with admin as manager and auto-assigns unassigned employees. Updated apply-leave API to find manager through employee's department assignment instead of non-existent db.employees collection."
+        - working: true
+          agent: "testing"
+          comment: "✅ All employee-department assignment APIs working correctly: GET /admin/employee-department-assignments returns all assignments with employee and department details. POST /admin/assign-employee-department successfully assigns individual employees to departments with proper validation. POST /admin/bulk-assign-employees handles multiple employee assignments efficiently. Auto-assignment system working: new employees automatically assigned to 'General' department during registration. Database collections (employee_departments, departments, managers) properly structured and populated. Verified 22 total assignments with employees properly linked to departments and managers."
+
+  - task: "Fixed Leave Application Workflow"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Fixed the broken leave application workflow by implementing proper manager assignment logic. Updated POST /employee/apply-leave to find manager through employee's department assignment (employee_departments → departments → managers collections). Added fallback to project-based manager assignment. Leave applications now properly assign manager_id, enabling the complete approval workflow."
+        - working: true
+          agent: "testing"
+          comment: "✅ LEAVE WORKFLOW COMPLETELY FIXED! End-to-end testing confirms: 1) New employee registration → auto-assigned to General department with Admin as manager, 2) Employee applies for leave → manager_id properly assigned based on department, 3) Manager can see leave request in GET /manager/leave-requests, 4) Manager can approve/reject via PUT /manager/leave-requests/{id}, 5) Employee receives notification of approval/rejection, 6) Leave balance properly updated after approval. No more 'manager_id is None' issues. Complete workflow success verified through comprehensive testing."
+
   - task: "Manager Status & Notifications API"
     implemented: true
     working: true
