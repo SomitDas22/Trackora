@@ -135,6 +135,24 @@ class SessionResponse(BaseModel):
     eta_logout_utc: Optional[datetime] = None
     can_logout: bool = False
 
+class DepartmentCreate(BaseModel):
+    name: str
+    description: str = ""
+
+class ManagerCreate(BaseModel):
+    employee_id: str  # Employee who becomes manager
+    department_id: str
+
+class ProjectCreate(BaseModel):
+    name: str
+    description: str = ""
+    department_id: str
+    manager_id: str
+    employee_ids: List[str] = []
+    start_date: str = ""
+    end_date: str = ""
+    status: str = "Active"  # Active, Completed, On Hold
+
 # Utility functions
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
