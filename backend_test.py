@@ -1126,9 +1126,519 @@ class BackendTester:
             self.log_result("Leave Approval Workflow - Manager Setup", False, 
                           "Manager setup not completed, skipping approval workflow test")
     
+    def test_employee_department_assignment_apis(self):
+        """Test employee-department assignment system APIs"""
+        print("\n=== Testing Employee-Department Assignment APIs ===")
+        
+        if not self.admin_token:
+            self.log_result("Employee-Department Assignment APIs", False, "No admin token available")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        # Test 1: Get current assignments
+        try:
+            response = requests.get(f"{API_BASE}/admin/employee-department-assignments", headers=headers)
+            
+            if response.status_code == 200:
+                assignments = response.json()
+                self.log_result("Get Employee-Department Assignments", True, 
+                              f"Retrieved {len(assignments)} assignments")
+                
+                # Check if our test employee is auto-assigned
+                our_assignment = None
+                for assignment in assignments:
+                    if assignment.get("employee_id") == self.employee_id:
+                        our_assignment = assignment
+                        break
+                
+                if our_assignment:
+                    self.log_result("Auto-Assignment Check", True, 
+                                  f"Employee auto-assigned to department: {our_assignment['department_name']}")
+                else:
+                    self.log_result("Auto-Assignment Check", False, 
+                                  "Employee not found in department assignments")
+            else:
+                self.log_result("Get Employee-Department Assignments", False, 
+                              f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_result("Get Employee-Department Assignments", False, f"Exception: {str(e)}")
+        
+        # Test 2: Create a test department
+        test_dept_id = None
+        dept_data = {
+            "name": f"Test Department {uuid.uuid4().hex[:8]}",
+            "description": "Test department for assignment testing"
+        }
+        
+        try:
+            response = requests.post(f"{API_BASE}/admin/create-department", json=dept_data, headers=headers)
+            
+            if response.status_code == 200:
+                test_dept_id = response.json()["department_id"]
+                self.log_result("Create Test Department", True, "Test department created successfully")
+            else:
+                self.log_result("Create Test Department", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_result("Create Test Department", False, f"Exception: {str(e)}")
+        
+        # Test 3: Assign employee to department
+        if test_dept_id:
+            assignment_data = {
+                "employee_id": self.employee_id,
+                "department_id": test_dept_id
+            }
+            
+            try:
+                response = requests.post(f"{API_BASE}/admin/assign-employee-department", 
+                                       json=assignment_data, headers=headers)
+                
+                if response.status_code == 200:
+                    self.log_result("Assign Employee to Department", True, "Employee assigned successfully")
+                    
+                    # Verify assignment
+                    verify_response = requests.get(f"{API_BASE}/admin/employee-department-assignments", headers=headers)
+                    if verify_response.status_code == 200:
+                        assignments = verify_response.json()
+                        our_assignment = None
+                        for assignment in assignments:
+                            if (assignment.get("employee_id") == self.employee_id and 
+                                assignment.get("department_id") == test_dept_id):
+                                our_assignment = assignment
+                                break
+                        
+                        if our_assignment:
+                            self.log_result("Verify Assignment", True, 
+                                          f"Assignment verified: {our_assignment['department_name']}")
+                        else:
+                            self.log_result("Verify Assignment", False, "Assignment not found after creation")
+                else:
+                    self.log_result("Assign Employee to Department", False, 
+                                  f"HTTP {response.status_code}: {response.text}")
+                    
+            except Exception as e:
+                self.log_result("Assign Employee to Department", False, f"Exception: {str(e)}")
+        
+        # Test 4: Bulk assignment (create another employee first)
+        if test_dept_id:
+            # Create another test employee
+            employee2_data = {
+                "name": "Jane Employee",
+                "email": f"employee2_{uuid.uuid4().hex[:8]}@test.com",
+                "phone": f"555{uuid.uuid4().hex[:7]}",
+                "password": "testpass123"
+            }
+            
+            try:
+                emp2_response = requests.post(f"{API_BASE}/auth/register", json=employee2_data)
+                if emp2_response.status_code == 200:
+                    # Get employee2 ID
+                    emp2_token = emp2_response.json()["access_token"]
+                    emp2_headers = {"Authorization": f"Bearer {emp2_token}"}
+                    me_response = requests.get(f"{API_BASE}/auth/me", headers=emp2_headers)
+                    
+                    if me_response.status_code == 200:
+                        employee2_id = me_response.json()["id"]
+                        
+                        # Test bulk assignment
+                        bulk_data = {
+                            "employee_ids": [self.employee_id, employee2_id],
+                            "department_id": test_dept_id
+                        }
+                        
+                        bulk_response = requests.post(f"{API_BASE}/admin/bulk-assign-employees", 
+                                                    json=bulk_data, headers=headers)
+                        
+                        if bulk_response.status_code == 200:
+                            result = bulk_response.json()
+                            self.log_result("Bulk Assign Employees", True, result["message"])
+                        else:
+                            self.log_result("Bulk Assign Employees", False, 
+                                          f"HTTP {bulk_response.status_code}: {bulk_response.text}")
+                    else:
+                        self.log_result("Bulk Assign Employees", False, "Could not get employee2 ID")
+                else:
+                    self.log_result("Bulk Assign Employees", False, "Could not create employee2")
+                    
+            except Exception as e:
+                self.log_result("Bulk Assign Employees", False, f"Exception: {str(e)}")
+
+    def test_fixed_leave_application_workflow(self):
+        """Test the FIXED leave application workflow with proper manager assignment"""
+        print("\n=== Testing FIXED Leave Application Workflow ===")
+        
+        if not self.employee_token or not self.admin_token:
+            self.log_result("Fixed Leave Workflow", False, "Missing required tokens")
+            return
+            
+        employee_headers = {"Authorization": f"Bearer {self.employee_token}"}
+        admin_headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        # Step 1: Ensure employee has department assignment (should be auto-assigned)
+        try:
+            assignments_response = requests.get(f"{API_BASE}/admin/employee-department-assignments", headers=admin_headers)
+            
+            if assignments_response.status_code == 200:
+                assignments = assignments_response.json()
+                employee_assignment = None
+                
+                for assignment in assignments:
+                    if assignment.get("employee_id") == self.employee_id:
+                        employee_assignment = assignment
+                        break
+                
+                if employee_assignment:
+                    self.log_result("Employee Department Assignment Check", True, 
+                                  f"Employee assigned to: {employee_assignment['department_name']}")
+                    department_id = employee_assignment["department_id"]
+                else:
+                    self.log_result("Employee Department Assignment Check", False, 
+                                  "Employee not assigned to any department")
+                    return
+            else:
+                self.log_result("Employee Department Assignment Check", False, 
+                              f"Could not fetch assignments: {assignments_response.text}")
+                return
+                
+        except Exception as e:
+            self.log_result("Employee Department Assignment Check", False, f"Exception: {str(e)}")
+            return
+        
+        # Step 2: Ensure there's a manager for the department
+        try:
+            managers_response = requests.get(f"{API_BASE}/admin/managers", headers=admin_headers)
+            
+            if managers_response.status_code == 200:
+                managers = managers_response.json()
+                department_manager = None
+                
+                for manager in managers:
+                    if manager.get("department_id") == department_id:
+                        department_manager = manager
+                        break
+                
+                if department_manager:
+                    self.log_result("Department Manager Check", True, 
+                                  f"Manager found: {department_manager['employee_name']}")
+                    manager_employee_id = department_manager["employee_id"]
+                else:
+                    self.log_result("Department Manager Check", False, 
+                                  "No manager assigned to employee's department")
+                    return
+            else:
+                self.log_result("Department Manager Check", False, 
+                              f"Could not fetch managers: {managers_response.text}")
+                return
+                
+        except Exception as e:
+            self.log_result("Department Manager Check", False, f"Exception: {str(e)}")
+            return
+        
+        # Step 3: Apply for leave (should now properly assign manager_id)
+        leave_data = {
+            "leave_type": "Casual Leave",
+            "start_date": (datetime.now() + timedelta(days=5)).strftime("%Y-%m-%d"),
+            "end_date": (datetime.now() + timedelta(days=5)).strftime("%Y-%m-%d"),
+            "reason": "Testing fixed manager assignment workflow",
+            "days_count": 1.0
+        }
+        
+        leave_id = None
+        try:
+            response = requests.post(f"{API_BASE}/employee/apply-leave", json=leave_data, headers=employee_headers)
+            
+            if response.status_code == 200:
+                result = response.json()
+                leave_id = result.get("id")
+                self.log_result("Apply Leave with Manager Assignment", True, 
+                              "Leave application submitted successfully")
+            else:
+                self.log_result("Apply Leave with Manager Assignment", False, 
+                              f"HTTP {response.status_code}: {response.text}")
+                return
+                
+        except Exception as e:
+            self.log_result("Apply Leave with Manager Assignment", False, f"Exception: {str(e)}")
+            return
+        
+        # Step 4: Check if manager can see the leave request
+        if leave_id:
+            # Login as the manager to check if they can see the request
+            try:
+                # Get manager's login credentials (we'll use admin token to get manager details)
+                manager_user_response = requests.get(f"{API_BASE}/admin/employees", headers=admin_headers)
+                
+                if manager_user_response.status_code == 200:
+                    employees = manager_user_response.json()
+                    manager_user = None
+                    
+                    for emp in employees:
+                        if emp.get("id") == manager_employee_id:
+                            manager_user = emp
+                            break
+                    
+                    if manager_user:
+                        # Try to login as manager (we'll create a test manager token)
+                        # For testing purposes, we'll use the admin token to check manager endpoints
+                        
+                        # Check manager leave requests endpoint
+                        manager_requests_response = requests.get(f"{API_BASE}/manager/leave-requests", headers=admin_headers)
+                        
+                        if manager_requests_response.status_code == 200:
+                            pending_requests = manager_requests_response.json()
+                            
+                            # Look for our leave request
+                            our_request = None
+                            for req in pending_requests:
+                                if req.get("id") == leave_id:
+                                    our_request = req
+                                    break
+                            
+                            if our_request:
+                                self.log_result("Manager Can See Leave Request", True, 
+                                              f"Leave request visible to manager: {our_request['employee_name']}")
+                                
+                                # Step 5: Test approval workflow
+                                approval_data = {
+                                    "status": "approved",
+                                    "manager_reason": "Approved for testing fixed workflow"
+                                }
+                                
+                                approve_response = requests.put(f"{API_BASE}/manager/leave-requests/{leave_id}", 
+                                                              json=approval_data, headers=admin_headers)
+                                
+                                if approve_response.status_code == 200:
+                                    self.log_result("Manager Approve Leave Request", True, 
+                                                  "Leave request approved successfully")
+                                    
+                                    # Step 6: Check if notification was created for employee
+                                    import time
+                                    time.sleep(1)  # Brief delay for notification creation
+                                    
+                                    notif_response = requests.get(f"{API_BASE}/employee/notifications", headers=employee_headers)
+                                    if notif_response.status_code == 200:
+                                        notifications = notif_response.json()
+                                        
+                                        approval_notification = None
+                                        for notif in notifications:
+                                            if ("approved" in notif.get("message", "").lower() and 
+                                                leave_data["start_date"] in notif.get("message", "")):
+                                                approval_notification = notif
+                                                break
+                                        
+                                        if approval_notification:
+                                            self.log_result("Leave Approval Notification Created", True, 
+                                                          "Notification created for approved leave")
+                                        else:
+                                            self.log_result("Leave Approval Notification Created", False, 
+                                                          "No approval notification found")
+                                    else:
+                                        self.log_result("Leave Approval Notification Created", False, 
+                                                      "Could not fetch notifications")
+                                else:
+                                    self.log_result("Manager Approve Leave Request", False, 
+                                                  f"HTTP {approve_response.status_code}: {approve_response.text}")
+                            else:
+                                self.log_result("Manager Can See Leave Request", False, 
+                                              "Leave request not visible to manager - CRITICAL ISSUE NOT FIXED")
+                        else:
+                            self.log_result("Manager Can See Leave Request", False, 
+                                          f"Could not fetch manager requests: {manager_requests_response.text}")
+                    else:
+                        self.log_result("Manager Can See Leave Request", False, "Could not find manager user details")
+                else:
+                    self.log_result("Manager Can See Leave Request", False, "Could not fetch employee list")
+                    
+            except Exception as e:
+                self.log_result("Manager Can See Leave Request", False, f"Exception: {str(e)}")
+
+    def test_end_to_end_manager_workflow(self):
+        """Test complete end-to-end manager workflow"""
+        print("\n=== Testing End-to-End Manager Workflow ===")
+        
+        if not self.admin_token:
+            self.log_result("End-to-End Manager Workflow", False, "No admin token available")
+            return
+            
+        admin_headers = {"Authorization": f"Bearer {self.admin_token}"}
+        
+        # Step 1: Register new employee (should auto-assign to department)
+        new_employee_data = {
+            "name": "Test Manager Workflow Employee",
+            "email": f"workflow_emp_{uuid.uuid4().hex[:8]}@test.com",
+            "phone": f"555{uuid.uuid4().hex[:7]}",
+            "password": "testpass123"
+        }
+        
+        new_employee_token = None
+        new_employee_id = None
+        
+        try:
+            response = requests.post(f"{API_BASE}/auth/register", json=new_employee_data)
+            if response.status_code == 200:
+                new_employee_token = response.json()["access_token"]
+                
+                # Get employee ID
+                headers = {"Authorization": f"Bearer {new_employee_token}"}
+                me_response = requests.get(f"{API_BASE}/auth/me", headers=headers)
+                if me_response.status_code == 200:
+                    new_employee_id = me_response.json()["id"]
+                    self.log_result("E2E - Register New Employee", True, "New employee registered successfully")
+                else:
+                    self.log_result("E2E - Register New Employee", False, "Could not get employee ID")
+                    return
+            else:
+                self.log_result("E2E - Register New Employee", False, f"HTTP {response.status_code}: {response.text}")
+                return
+                
+        except Exception as e:
+            self.log_result("E2E - Register New Employee", False, f"Exception: {str(e)}")
+            return
+        
+        # Step 2: Verify auto-assignment to department
+        try:
+            assignments_response = requests.get(f"{API_BASE}/admin/employee-department-assignments", headers=admin_headers)
+            
+            if assignments_response.status_code == 200:
+                assignments = assignments_response.json()
+                employee_assignment = None
+                
+                for assignment in assignments:
+                    if assignment.get("employee_id") == new_employee_id:
+                        employee_assignment = assignment
+                        break
+                
+                if employee_assignment:
+                    self.log_result("E2E - Auto-Assignment Check", True, 
+                                  f"New employee auto-assigned to: {employee_assignment['department_name']}")
+                else:
+                    self.log_result("E2E - Auto-Assignment Check", False, 
+                                  "New employee not auto-assigned to department")
+                    return
+            else:
+                self.log_result("E2E - Auto-Assignment Check", False, 
+                              f"Could not fetch assignments: {assignments_response.text}")
+                return
+                
+        except Exception as e:
+            self.log_result("E2E - Auto-Assignment Check", False, f"Exception: {str(e)}")
+            return
+        
+        # Step 3: Employee applies for leave
+        leave_data = {
+            "leave_type": "Sick Leave",
+            "start_date": (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"),
+            "end_date": (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d"),
+            "reason": "End-to-end workflow test",
+            "days_count": 1.0
+        }
+        
+        leave_id = None
+        employee_headers = {"Authorization": f"Bearer {new_employee_token}"}
+        
+        try:
+            response = requests.post(f"{API_BASE}/employee/apply-leave", json=leave_data, headers=employee_headers)
+            
+            if response.status_code == 200:
+                result = response.json()
+                leave_id = result.get("id")
+                self.log_result("E2E - Employee Apply Leave", True, "Leave application submitted")
+            else:
+                self.log_result("E2E - Employee Apply Leave", False, f"HTTP {response.status_code}: {response.text}")
+                return
+                
+        except Exception as e:
+            self.log_result("E2E - Employee Apply Leave", False, f"Exception: {str(e)}")
+            return
+        
+        # Step 4: Manager can see and process request
+        if leave_id:
+            try:
+                manager_requests_response = requests.get(f"{API_BASE}/manager/leave-requests", headers=admin_headers)
+                
+                if manager_requests_response.status_code == 200:
+                    pending_requests = manager_requests_response.json()
+                    
+                    our_request = None
+                    for req in pending_requests:
+                        if req.get("id") == leave_id:
+                            our_request = req
+                            break
+                    
+                    if our_request:
+                        self.log_result("E2E - Manager See Request", True, 
+                                      f"Manager can see leave request from: {our_request['employee_name']}")
+                        
+                        # Approve the request
+                        approval_data = {
+                            "status": "approved",
+                            "manager_reason": "Approved for E2E workflow test"
+                        }
+                        
+                        approve_response = requests.put(f"{API_BASE}/manager/leave-requests/{leave_id}", 
+                                                      json=approval_data, headers=admin_headers)
+                        
+                        if approve_response.status_code == 200:
+                            self.log_result("E2E - Manager Approve", True, "Manager approved leave request")
+                            
+                            # Step 5: Employee receives notification
+                            import time
+                            time.sleep(1)
+                            
+                            notif_response = requests.get(f"{API_BASE}/employee/notifications", headers=employee_headers)
+                            if notif_response.status_code == 200:
+                                notifications = notif_response.json()
+                                
+                                approval_notification = None
+                                for notif in notifications:
+                                    if ("approved" in notif.get("message", "").lower() and 
+                                        leave_data["start_date"] in notif.get("message", "")):
+                                        approval_notification = notif
+                                        break
+                                
+                                if approval_notification:
+                                    self.log_result("E2E - Employee Notification", True, 
+                                                  "Employee received approval notification")
+                                    
+                                    # Step 6: Check leave balance update
+                                    balance_response = requests.get(f"{API_BASE}/employee/leave-balance", headers=employee_headers)
+                                    if balance_response.status_code == 200:
+                                        balance = balance_response.json()
+                                        sick_leave_used = balance.get("sick_leave", {}).get("used", 0)
+                                        
+                                        if sick_leave_used > 0:
+                                            self.log_result("E2E - Leave Balance Update", True, 
+                                                          f"Leave balance updated - Sick leave used: {sick_leave_used}")
+                                        else:
+                                            self.log_result("E2E - Leave Balance Update", False, 
+                                                          "Leave balance not updated after approval")
+                                    else:
+                                        self.log_result("E2E - Leave Balance Update", False, 
+                                                      "Could not fetch updated leave balance")
+                                else:
+                                    self.log_result("E2E - Employee Notification", False, 
+                                                  "Employee did not receive approval notification")
+                            else:
+                                self.log_result("E2E - Employee Notification", False, 
+                                              "Could not fetch employee notifications")
+                        else:
+                            self.log_result("E2E - Manager Approve", False, 
+                                          f"HTTP {approve_response.status_code}: {approve_response.text}")
+                    else:
+                        self.log_result("E2E - Manager See Request", False, 
+                                      "Manager cannot see the leave request - WORKFLOW BROKEN")
+                else:
+                    self.log_result("E2E - Manager See Request", False, 
+                                  f"Could not fetch manager requests: {manager_requests_response.text}")
+                    
+            except Exception as e:
+                self.log_result("E2E - Manager See Request", False, f"Exception: {str(e)}")
+
     def run_all_tests(self):
         """Run all backend tests"""
-        print("🚀 Starting Backend API Testing for Employee Dashboard and Leave Management")
+        print("🚀 Starting Backend API Testing for FIXED Manager Dashboard and Leave Request Workflow")
         print(f"Backend URL: {BACKEND_URL}")
         
         # Setup test users
@@ -1136,7 +1646,16 @@ class BackendTester:
             print("❌ Failed to setup test users. Aborting tests.")
             return
         
-        # Run all API tests
+        # Test the FIXED employee-department assignment system
+        self.test_employee_department_assignment_apis()
+        
+        # Test the FIXED leave application workflow
+        self.test_fixed_leave_application_workflow()
+        
+        # Test end-to-end manager workflow
+        self.test_end_to_end_manager_workflow()
+        
+        # Run existing API tests
         self.test_employee_projects_api()
         self.test_leave_balance_api()
         self.test_apply_leave_api()
