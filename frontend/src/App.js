@@ -588,11 +588,18 @@ const AdminDashboard = ({ admin, onLogout }) => {
                 {/* New Management Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Admin Users Card */}
-                  <Card className="hover:shadow-lg transition-shadow">
+                  <Card 
+                    className="hover:shadow-lg transition-shadow cursor-pointer hover:bg-gray-50"
+                    onClick={() => setShowAdminUsersPage(true)}
+                    data-testid="admin-users-card"
+                  >
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-lg font-semibold">Admin Users</CardTitle>
                       <Button
-                        onClick={() => setShowCreateAdminModal(true)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowCreateAdminModal(true);
+                        }}
                         size="sm"
                         className="bg-slate-600 hover:bg-slate-700"
                         data-testid="create-admin-btn"
@@ -616,6 +623,9 @@ const AdminDashboard = ({ admin, onLogout }) => {
                           {adminUsers.length > 3 && (
                             <div className="text-xs text-gray-500">+{adminUsers.length - 3} more</div>
                           )}
+                        </div>
+                        <div className="text-xs text-blue-600 font-medium pt-1">
+                          Click to manage →
                         </div>
                       </div>
                     </CardContent>
