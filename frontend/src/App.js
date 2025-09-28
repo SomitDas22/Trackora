@@ -380,6 +380,16 @@ const AdminDashboard = ({ admin, onLogout }) => {
     }
   };
 
+  // Fetch employees
+  const fetchEmployees = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/employees`);
+      setEmployees(response.data);
+    } catch (err) {
+      console.error('Error fetching employees:', err);
+    }
+  };
+
   // Fetch user sessions
   const fetchUserSessions = async (userId) => {
     try {
